@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>互動式拖曳排課系統 (專業安全版)</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase App & Firestore SDK (v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
@@ -76,6 +78,7 @@
 
     <div id="print-only-container" class="hidden"></div>
 
+    <!-- 頂部標題與控制列 -->
     <header class="flex justify-between items-center bg-white px-4 py-2 shadow-sm border-b border-gray-200 shrink-0 z-40 print:hidden">
         <div class="flex items-center gap-3">
             <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -84,6 +87,7 @@
             <span id="role-badge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">📡 連線雲端中...</span>
         </div>
         <div class="flex gap-2">
+            <!-- 管理員專用按鈕，預設隱藏 (admin-btn) -->
             <button onclick="saveToCloud()" class="admin-btn hidden px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition text-sm font-medium border border-blue-200">
                 💾 儲存進度至雲端
             </button>
@@ -105,21 +109,25 @@
         </div>
     </header>
 
+    <!-- 主要內容區 -->
     <main class="flex-1 flex flex-row overflow-hidden p-2 gap-2 print:p-0 print:m-0">
         
+        <!-- 課表區 (80%) -->
         <div class="w-[80%] flex flex-col min-w-0 flex-shrink-0 print:w-full print:block">
             
+            <!-- 班級切換 -->
             <div class="flex justify-center mb-2 shrink-0 print:hidden">
                 <div class="inline-flex bg-gray-200 rounded-lg p-1 shadow-inner">
-                    <button id="btn-view-a" onclick="switchView('A')" class="px-8 py-1 bg-blue-600 text-white font-bold rounded-md shadow-sm transition-all text-sm tracking-widest">
+                    <button id="btn-view-a" onclick="switchView('A')" class="px-8 py-1 bg-blue-600 text-white font-bold rounded-md shadow-sm text-sm tracking-widest">
                         甲班課表
                     </button>
-                    <button id="btn-view-b" onclick="switchView('B')" class="px-8 py-1 text-gray-600 font-bold rounded-md hover:bg-gray-300 transition-all text-sm tracking-widest">
+                    <button id="btn-view-b" onclick="switchView('B')" class="px-8 py-1 text-gray-600 font-bold rounded-md hover:bg-gray-300 text-sm tracking-widest">
                         乙班課表
                     </button>
                 </div>
             </div>
 
+            <!-- 視圖 A (甲班) -->
             <div id="view-a" class="flex-1 flex flex-row gap-2 overflow-hidden">
                 <section class="flex-1 flex flex-col bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[300px]">
                     <div class="bg-blue-600 text-white py-1.5 font-bold text-center text-sm tracking-widest shrink-0">甲班 - 第一週</div>
@@ -131,6 +139,7 @@
                 </section>
             </div>
 
+            <!-- 視圖 B (乙班) -->
             <div id="view-b" class="hidden flex-1 flex flex-row gap-2 overflow-hidden">
                 <section class="flex-1 flex flex-col bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[300px]">
                     <div class="bg-green-600 text-white py-1.5 font-bold text-center text-sm tracking-widest shrink-0">乙班 - 第一週</div>
@@ -143,6 +152,7 @@
             </div>
         </div>
 
+        <!-- 右欄：待排課程庫 (20%) -->
         <aside id="sidebar-container" class="w-[20%] bg-white border border-gray-300 rounded shadow-sm flex flex-col shrink-0 min-w-[200px] print:hidden">
             <div class="bg-gray-700 text-white py-1.5 font-bold text-center text-sm flex justify-between items-center px-3 shrink-0">
                 <span id="pool-title">📚 甲班課程庫 (待排)</span>
@@ -160,6 +170,7 @@
         </aside>
     </main>
 
+    <!-- 老師課表檢視 Modal -->
     <div id="teacher-schedule-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
         <div class="bg-white rounded-lg p-5 w-[900px] max-w-[95vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -178,6 +189,7 @@
         </div>
     </div>
 
+    <!-- 編輯課程庫預設資訊 Modal (管理員) -->
     <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-5 w-[380px] shadow-xl">
             <h2 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2">編輯課程預設資訊</h2>
@@ -209,6 +221,7 @@
         </div>
     </div>
 
+    <!-- 雙擊微調單堂師資 Modal -->
     <div id="edit-instance-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-5 w-[380px] shadow-xl">
             <h2 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2 flex justify-between items-center">
@@ -234,6 +247,7 @@
         </div>
     </div>
 
+    <!-- 匯入與確認彈窗 -->
     <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-6 w-[600px] shadow-xl">
             <h2 id="import-modal-title" class="text-lg font-bold mb-2 text-gray-800">從 Google Sheets 貼上資料</h2>
@@ -282,9 +296,9 @@
         // ==========================================
         // 🔒 1. 權限與 Firebase 設定
         // ==========================================
-        const ADMIN_PASSWORD = "taes"; // 管理員認證密碼
+        const ADMIN_PASSWORD = "123"; // 管理員認證密碼
 
-          const firebaseConfig = {
+        const firebaseConfig = {
       apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
       authDomain: "tasc-schedule.firebaseapp.com",
       projectId: "tasc-schedule",
@@ -292,7 +306,6 @@
       messagingSenderId: "829044730170",
       appId: "1:829044730170:web:0d5c864d9b90340d200803"
         };
-
 
         let db = null;
         let isAdmin = false;
@@ -357,12 +370,6 @@
         let highlightMode = null;   
         let highlightTarget = null; 
 
-        window.onload = () => {
-            renderTable('A', 0); renderTable('A', 1);
-            renderTable('B', 0); renderTable('B', 1);
-            checkPermissionsAndInitFirebase();
-        };
-
         function switchView(view) {
             currentViewClass = view;
             highlightMode = null; highlightTarget = null; 
@@ -389,26 +396,6 @@
             renderPool();
         }
 
-        function renderTable(classId, weekIndex) {
-            const container = document.getElementById(`table-${classId.toLowerCase()}-w${weekIndex + 1}-container`);
-            let html = `<table class="border-collapse bg-white w-full h-full"><thead><tr><th class="sticky top-0 left-0 z-30 bg-gray-200 border border-gray-300 p-1 w-12 text-[11px] text-gray-700 sticky-col-shadow sticky-row-shadow">節數</th>`;
-            for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
-                const bgClass = classId === 'A' ? "bg-blue-50" : "bg-green-50";
-                html += `<th class="sticky top-0 z-20 ${bgClass} border border-gray-300 p-1 min-w-[100px] text-xs text-gray-700 sticky-row-shadow font-bold">${days[d]}</th>`;
-            }
-            html += `</tr></thead><tbody>`;
-
-            for (let p = 0; p < 8; p++) {
-                html += `<tr><td class="sticky left-0 z-10 bg-gray-100 border border-gray-300 p-1 text-center font-bold text-gray-600 text-xs sticky-col-shadow">第 ${p+1} 節</td>`;
-                for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
-                    html += `<td id="cell-${classId}-${d}-${p}" class="border border-gray-300 p-1 relative h-[72px] min-w-[100px] align-top bg-white droppable transition-colors" data-class="${classId}" data-day="${d}" data-period="${p}" ondragover="allowDrop(event)" ondrop="dropToCell(event, '${classId}', ${d}, ${p})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"></td>`;
-                }
-                html += `</tr>`;
-            }
-            html += `</tbody></table>`;
-            container.innerHTML = html;
-        }
-
         // ==========================================
         // 🧑‍🏫 3. 師資解析與高亮/反白邏輯
         // ==========================================
@@ -422,7 +409,6 @@
             return list.filter(t => t && t !== "未指定");
         }
 
-        // 🔥 【核心恢復】精確解析實例(單堂)師資列表
         function getTeachersListForInstance(instanceData) {
             if (!instanceData) return [];
             let list = [instanceData.mainTeacher];
@@ -485,26 +471,22 @@
         }
 
         // ==========================================
-        // ⚡ 4. 【核心完全恢復】無損衝堂偵測機制
+        // ⚡ 4. 衝堂偵測機制
         // ==========================================
-        // 比較兩堂課是否有相同的老師存在
         function getConflictingTeachers(instA, instB) {
             if (!instA || !instB) return [];
             const tA = getTeachersListForInstance(instA);
-            const tB = getTeachersListForInstance(instB);
-            return tA.filter(t => tB.includes(t));
+            const tBList = instB.courseId ? getTeachersListForInstance(instB) : getTeachersListForCourseId(instB);
+            return tA.filter(t => tBList.includes(t));
         }
 
-        // 徹底掃描全雙週、跨甲乙班的衝堂事件
         function checkAllConflicts() {
-            // 清除之前的紅色警示呼吸燈與驚嘆號
             document.querySelectorAll('.conflict').forEach(el => {
                 el.classList.remove('conflict');
                 const icon = el.querySelector('.conflict-icon');
                 if(icon) icon.remove();
             });
 
-            // 雙週 10 天 * 每天 8 節 交叉比對
             for (let d = 0; d < 10; d++) {
                 for (let p = 0; p < 8; p++) {
                     const instA = scheduleA[d][p];
@@ -825,7 +807,7 @@
                 coursePool[generateId()] = { unit, mainTeacher, tas, total:periods, remaining:periods, targetClass:currentViewClass, color:getNextColor() };
                 cnt++;
             });
-            renderPool(); closeImportModal(); if(cnt>0) showToast(`成功快線匯入 ${cnt} 筆精美排課主題`, 'success');
+            renderPool(); closeImportModal(); if(cnt>0) showToast(`成功快速匯入 ${cnt} 筆排課主題`, 'success');
         }
 
         function resetSchedule() { document.getElementById('reset-modal').classList.remove('hidden'); }
@@ -841,15 +823,24 @@
         }
 
         // ==========================================
-        // 💾 8. 儲存與讀取核心序列化
+        // 💾 8. 【安全升級】雲端資料庫編碼與儲存核心
         // ==========================================
-        function serializeState() { return { pool: coursePool, schedA: scheduleA, schedB: scheduleB }; }
+        
+        // 🔹 輔助函數：將包含巢狀陣列的資料序列化為「純 JSON 字串」以安全存入 Firestore
+        function serializeState() { 
+            return { 
+                pool: coursePool, 
+                schedA: scheduleA, 
+                schedB: scheduleB 
+            }; 
+        }
+        
         function deserializeState(state) {
             document.querySelectorAll('td.droppable').forEach(td => td.innerHTML = '');
             for(let d=0;d<10;d++)for(let p=0;p<8;p++){ scheduleA[d][p]=null; scheduleB[d][p]=null; }
             coursePool = state.pool || {};
             
-            // 補齊可能漏掉的顏色定義
+            // 補齊顏色
             Object.values(coursePool).forEach(c => { if(!c.color) c.color = getNextColor(); });
             renderPool();
 
@@ -876,29 +867,60 @@
             applyHighlights();
         }
 
+        // 🔥 【雲端大修正】將資料轉換成「純字串」安全避開 Firestore Nested Arrays 錯誤！
         function saveToCloud() {
             if(!isAdmin) return;
-            const state = serializeState();
+            const rawState = serializeState();
+            
             if(db) {
                 showToast("📡 正在即時儲存至雲端...", "info");
-                db.collection("schedules").doc("master_data").set(state)
-                .then(() => showToast("☁️ 資料已成功寫入 Google 雲端儲存中心！", "success"))
-                .catch(e => { console.error(e); showToast("❌ 雲端寫入失敗", "error"); });
+                
+                // 💡 關鍵魔術：把巢狀陣列結構直接轉為 JSON 字串傳送，徹底解決 Nested Array 報錯！
+                const securePayload = {
+                    encodedData: JSON.stringify(rawState),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                db.collection("schedules").doc("master_data_v2").set(securePayload)
+                .then(() => showToast("☁️ 資料已成功同步至 Google 雲端儲存中心！", "success"))
+                .catch(e => { 
+                    console.error("雲端存檔錯誤: ", e); 
+                    showToast("❌ 雲端儲存失敗", "error"); 
+                });
             } else {
-                localStorage.setItem('pro_schedule_state', JSON.stringify(state));
-                showToast("💾 資料已暫存至您電腦的本機空間！", "success");
+                localStorage.setItem('pro_schedule_state', JSON.stringify(rawState));
+                showToast("💾 資料已暫存至您電腦的本機空間！(未配置 Firebase 金鑰)", "success");
             }
         }
 
+        // 📥 載入時自動偵測解碼
         function loadFromCloud() {
             if(db) {
-                db.collection("schedules").doc("master_data").get()
+                // 先嘗試載入新版 v2 資料格式 (免除 Nested Array 錯誤的加密字串)
+                db.collection("schedules").doc("master_data_v2").get()
                 .then(doc => {
-                    if(doc.exists) { deserializeState(doc.data()); showToast("☁️ 成功同步最新雲端資料", "success"); }
-                    else { loadFromLocal(); }
+                    if(doc.exists && doc.data().encodedData) {
+                        const decodedState = JSON.parse(doc.data().encodedData);
+                        deserializeState(decodedState);
+                        showToast("☁️ 成功同步最新雲端資料", "success");
+                    } else {
+                        // 回退嘗試讀取舊版 (如果之前存過非巢狀的舊資料)
+                        db.collection("schedules").doc("master_data").get()
+                        .then(oldDoc => {
+                            if(oldDoc.exists) {
+                                deserializeState(oldDoc.data());
+                                showToast("☁️ 成功載入舊版雲端備份", "success");
+                            } else {
+                                loadFromLocal();
+                            }
+                        })
+                        .catch(() => loadFromLocal());
+                    }
                 })
                 .catch(e => { loadFromLocal(); });
-            } else { loadFromLocal(); }
+            } else { 
+                loadFromLocal(); 
+            }
         }
 
         function loadFromLocal() {
