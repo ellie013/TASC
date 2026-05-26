@@ -384,11 +384,13 @@
                     loadFromCloud();
                 } catch(e) {
                     console.error(e);
-                    showToast("☁️ 雲端服務載入失敗，切換至本機暫存", "warning");
-                    loadFromLocal();
+                    showToast("☁️ 雲端服務載入失敗，使用本機最新狀態", "warning");
                 }
             } else {
-                loadFromLocal();
+                // 沒有填寫金鑰，不用等雲端，直接結束
+                if (document.getElementById('role-badge').innerText.includes('連線')) {
+                    document.getElementById('role-badge').innerText = isAdmin ? "✍️ 管理員模式 (本機)" : "👁️ 唯讀展示模式 (本機)";
+                }
             }
         }
 
@@ -896,7 +898,6 @@
         // 💾 8. 【安全升級】雲端資料庫編碼與儲存核心
         // ==========================================
         
-        // 🔹 輔助函數：將包含巢狀陣列的資料序列化為「純 JSON 字串」以安全存入 Firestore
         function serializeState() { 
             return { 
                 pool: coursePool, 
@@ -946,7 +947,7 @@
             applyHighlights();
         }
 
-        // 🔥 【雲端大修正】將資料轉換成「純字串」安全避開 Firestore Nested Arrays 錯誤！
+        // 🔥 將資料轉換成「純字串」安全避開 Firestore Nested Arrays 錯誤
         function saveToCloud() {
             if(!isAdmin) return;
             const rawState = serializeState();
@@ -954,7 +955,6 @@
             if(db) {
                 showToast("📡 正在即時儲存至雲端...", "info");
                 
-                // 💡 關鍵魔術：把巢狀陣列結構直接轉為 JSON 字串傳送，徹底解決 Nested Array 報錯！
                 const securePayload = {
                     encodedData: JSON.stringify(rawState),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -972,71 +972,81 @@
             }
         }
 
-        // 📥 載入時自動偵測解碼
+        // 📥 Offline-First (離線優先/背景同步機制)
         function loadFromCloud() {
             if(db) {
-                // 先嘗試載入新版 v2 資料格式 (免除 Nested Array 錯誤的加密字串)
+                // 🚀 防呆機制：設定 5 秒鐘超時，如果連線太慢，先改掉狀態列並提示
+                const timeoutId = setTimeout(() => {
+                    const badge = document.getElementById('role-badge');
+                    if (badge.innerText.includes('連線')) {
+                         badge.innerText = isAdmin ? "✍️ 管理員模式 (網路較慢)" : "👁️ 唯讀模式 (網路較慢)";
+                         showToast("⚠️ 網路連線較慢，目前使用本機備份，背景將持續嘗試連線", "warning");
+                    }
+                }, 5000);
+
+                // 背景默默去抓雲端資料
                 db.collection("schedules").doc("master_data_v2").get()
                 .then(doc => {
+                    clearTimeout(timeoutId); // 成功連上就取消警告
                     if(doc.exists && doc.data().encodedData) {
                         const decodedState = JSON.parse(doc.data().encodedData);
                         deserializeState(decodedState);
-                        showToast("☁️ 成功同步最新雲端資料", "success");
+                        
+                        // 資料抓完才把徽章改回正常文字
+                        document.getElementById('role-badge').innerText = isAdmin ? "✍️ 管理員模式" : "👁️ 唯讀展示模式";
+                        showToast("☁️ 已成功同步最新雲端資料", "success");
                     } else {
-                        // 回退嘗試讀取舊版 (如果之前存過非巢狀的舊資料)
+                        // 回退嘗試讀取舊版
                         db.collection("schedules").doc("master_data").get()
                         .then(oldDoc => {
                             if(oldDoc.exists) {
                                 deserializeState(oldDoc.data());
+                                document.getElementById('role-badge').innerText = isAdmin ? "✍️ 管理員模式" : "👁️ 唯讀展示模式";
                                 showToast("☁️ 成功載入舊版雲端備份", "success");
-                            } else {
-                                loadFromLocal();
                             }
                         })
-                        .catch(() => loadFromLocal());
+                        .catch(() => {});
                     }
                 })
-                .catch(e => { loadFromLocal(); });
-            } else { 
-                loadFromLocal(); 
+                .catch(e => { 
+                    // 雲端真的掛了
+                    clearTimeout(timeoutId);
+                    document.getElementById('role-badge').innerText = isAdmin ? "✍️ 管理員模式 (離線)" : "👁️ 唯讀模式 (離線)";
+                });
             }
         }
 
-        function loadFromLocal() {
+        // 讀取本機快取 (支援靜音載入，避免一打開就跳兩次提示)
+        function loadFromLocal(isSilent = false) {
             try {
                 const data = localStorage.getItem('pro_schedule_state');
-                if(data) { deserializeState(JSON.parse(data)); showToast("📂 載入本機備份成功", "info"); }
+                if(data) { 
+                    deserializeState(JSON.parse(data)); 
+                    if(!isSilent) showToast("📂 載入本機備份成功", "info"); 
+                }
             } catch(e) { console.error(e); }
         }
 
-        function showToast(msg, type='info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            let bg = 'bg-blue-600';
-            if(type==='success') bg = 'bg-green-600';
-            if(type==='error') bg = 'bg-red-600';
-            toast.className = `${bg} text-white px-4 py-2 rounded shadow-lg text-sm font-bold opacity-0 transition-opacity pointer-events-auto`;
-            toast.innerText = msg; container.appendChild(toast);
-            setTimeout(()=>toast.classList.remove('opacity-0'), 10);
-            setTimeout(()=>{ toast.classList.add('opacity-0'); setTimeout(()=>toast.remove(), 300); }, 3000);
-        }
-
         // ==========================================
-        // 🚀 9. 系統初始化 (修正載入順序防卡死)
+        // 🚀 9. 系統初始化 (Offline-First 秒開機制)
         // ==========================================
         function initApp() {
-            // 確保表格在任何資料載入前都已生成
+            // 1. 確保表格在任何資料載入前都已立刻生成 (不再依賴 window.onload 被卡死)
             if (!document.getElementById('cell-A-0-0')) {
                 renderTable('A', 0);
                 renderTable('A', 1);
                 renderTable('B', 0);
                 renderTable('B', 1);
             }
+            
+            // 2. ⚡【秒開核心】：不管雲端連不連得上，先立刻載入本機資料，讓畫面瞬間出來！
+            loadFromLocal(true); 
+
+            // 3. 然後再去背景檢查權限與連線 Firebase
             checkPermissionsAndInitFirebase();
         }
 
-        // 🛡️ 防呆機制：不再使用 window.onload (避免被擴充功能卡死)，
-        // 改為 DOMContentLoaded 或直接執行，確保格子秒速出現！
+        // 🛡️ 防呆機制：不再使用 window.onload，改為 DOMContentLoaded 或直接執行，確保格子秒速出現！
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initApp);
         } else {
