@@ -298,7 +298,7 @@
         // ==========================================
         const ADMIN_PASSWORD = "123"; // 管理員認證密碼
 
-        const firebaseConfig = {
+          const firebaseConfig = {
       apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
       authDomain: "tasc-schedule.firebaseapp.com",
       projectId: "tasc-schedule",
@@ -847,6 +847,7 @@
             const loadSched = (src, dest, classId) => {
                 if(!src) return;
                 for(let d=0; d<10; d++) {
+                    if(!src[d]) continue; // 🛡️ 極端情況防呆：避免讀取空陣列崩潰
                     for(let p=0; p<8; p++) {
                         let item = src[d][p]; if(!item) continue;
                         if(typeof item === 'string') { // 舊格式相容
