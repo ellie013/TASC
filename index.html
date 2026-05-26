@@ -299,6 +299,7 @@
         // ==========================================
         const ADMIN_PASSWORD = "123"; // 管理員認證密碼
 
+        // ⚠️ 請在這裡貼上您的 Firebase 金鑰
           const firebaseConfig = {
       apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
       authDomain: "tasc-schedule.firebaseapp.com",
@@ -417,6 +418,28 @@
         let highlightMode = null;   
         let highlightTarget = null; 
 
+        function renderTable(classId, weekIndex) {
+            const container = document.getElementById(`table-${classId.toLowerCase()}-w${weekIndex + 1}-container`);
+            if (!container) return; // 防呆
+            
+            let html = `<table class="border-collapse bg-white w-full h-full"><thead><tr><th class="sticky top-0 left-0 z-30 bg-gray-200 border border-gray-300 p-1 w-12 text-[11px] text-gray-700 sticky-col-shadow sticky-row-shadow">節數</th>`;
+            for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
+                const bgClass = classId === 'A' ? "bg-blue-50" : "bg-green-50";
+                html += `<th class="sticky top-0 z-20 ${bgClass} border border-gray-300 p-1 min-w-[100px] text-xs text-gray-700 sticky-row-shadow font-bold">${days[d]}</th>`;
+            }
+            html += `</tr></thead><tbody>`;
+
+            for (let p = 0; p < 8; p++) {
+                html += `<tr><td class="sticky left-0 z-10 bg-gray-100 border border-gray-300 p-1 text-center font-bold text-gray-600 text-xs sticky-col-shadow">第 ${p+1} 節</td>`;
+                for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
+                    html += `<td id="cell-${classId}-${d}-${p}" class="border border-gray-300 p-1 relative h-[72px] min-w-[100px] align-top bg-white droppable transition-colors" data-class="${classId}" data-day="${d}" data-period="${p}" ondragover="allowDrop(event)" ondrop="dropToCell(event, '${classId}', ${d}, ${p})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"></td>`;
+                }
+                html += `</tr>`;
+            }
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
         function switchView(view) {
             currentViewClass = view;
             highlightMode = null; highlightTarget = null; 
@@ -508,7 +531,7 @@
                         if (highlightMode === 'teacher' && getTeachersListForInstance(inst).includes(highlightTarget)) hit = true;
                         
                         if (hit) {
-                            const card = document.getElementById(`cell-${classId}-${d}-${p}`).firstElementChild;
+                            const card = document.getElementById(`cell-${classId}-${d}-${p}`)?.firstElementChild;
                             if (card) card.classList.add('highlighted-instance');
                         }
                     }
@@ -883,6 +906,12 @@
         }
         
         function deserializeState(state) {
+            // 🛡️ 終極防呆：確保如果載入資料時，格子還沒畫出來，會強制幫它畫出來！
+            if (!document.getElementById('cell-A-0-0')) {
+                renderTable('A', 0); renderTable('A', 1);
+                renderTable('B', 0); renderTable('B', 1);
+            }
+
             document.querySelectorAll('td.droppable').forEach(td => td.innerHTML = '');
             for(let d=0;d<10;d++)for(let p=0;p<8;p++){ scheduleA[d][p]=null; scheduleB[d][p]=null; }
             coursePool = state.pool || {};
@@ -992,14 +1021,27 @@
             setTimeout(()=>{ toast.classList.add('opacity-0'); setTimeout(()=>toast.remove(), 300); }, 3000);
         }
 
-        // 初始化
-        window.onload = () => {
-            renderTable('A', 0);
-            renderTable('A', 1);
-            renderTable('B', 0);
-            renderTable('B', 1);
+        // ==========================================
+        // 🚀 9. 系統初始化 (修正載入順序防卡死)
+        // ==========================================
+        function initApp() {
+            // 確保表格在任何資料載入前都已生成
+            if (!document.getElementById('cell-A-0-0')) {
+                renderTable('A', 0);
+                renderTable('A', 1);
+                renderTable('B', 0);
+                renderTable('B', 1);
+            }
             checkPermissionsAndInitFirebase();
-        };
+        }
+
+        // 🛡️ 防呆機制：不再使用 window.onload (避免被擴充功能卡死)，
+        // 改為 DOMContentLoaded 或直接執行，確保格子秒速出現！
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
     </script>
 </body>
 </html>
