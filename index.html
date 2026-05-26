@@ -84,7 +84,8 @@
             <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                 📅 互動式拖曳排課系統 
             </h1>
-            <span id="role-badge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold">📡 連線雲端中...</span>
+            <!-- 🔑 改為可點擊切換權限的徽章 -->
+            <span id="role-badge" onclick="toggleAdminMode()" class="cursor-pointer bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold hover:opacity-80 transition-opacity shadow-sm" title="點擊切換管理權限">📡 連線雲端中...</span>
         </div>
         <div class="flex gap-2">
             <!-- 管理員專用按鈕，預設隱藏 (admin-btn) -->
@@ -298,7 +299,7 @@
         // ==========================================
         const ADMIN_PASSWORD = "123"; // 管理員認證密碼
 
-           const firebaseConfig = {
+          const firebaseConfig = {
       apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
       authDomain: "tasc-schedule.firebaseapp.com",
       projectId: "tasc-schedule",
@@ -310,23 +311,69 @@
         let db = null;
         let isAdmin = false;
 
+        // 🔑 視覺化一鍵切換管理員模式
+        function toggleAdminMode() {
+            if (isAdmin) {
+                // 執行登出
+                isAdmin = false;
+                document.body.classList.add('read-only-mode');
+                document.getElementById('role-badge').innerText = "👁️ 唯讀展示模式";
+                document.getElementById('role-badge').className = "cursor-pointer bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-blue-200 transition-colors shadow-sm";
+                document.getElementById('sidebar-help-text').innerHTML = "💡 唯讀模式下無法修改課表。您可以點擊老師姓名高亮追蹤特定師資課表。";
+                document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.add('hidden'));
+                
+                // 清除網址參數但不重新整理
+                const url = new URL(window.location);
+                url.searchParams.delete('admin');
+                window.history.pushState({}, '', url);
+
+                showToast("🔒 已登出，切換為唯讀模式", "info");
+                
+                // 重新渲染畫面以拔除拖曳功能
+                deserializeState(serializeState());
+            } else {
+                // 執行登入
+                const pwd = prompt("請輸入管理員密碼以解鎖編輯權限：");
+                if (pwd === ADMIN_PASSWORD) {
+                    isAdmin = true;
+                    document.body.classList.remove('read-only-mode');
+                    document.getElementById('role-badge').innerText = "✍️ 管理員模式";
+                    document.getElementById('role-badge').className = "cursor-pointer bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-green-200 transition-colors shadow-sm";
+                    document.getElementById('sidebar-help-text').innerHTML = "將卡片拖至左側。雙擊課表卡片可微調該堂助教。<br>點擊「老師名稱」可高亮老師的課。";
+                    document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.remove('hidden'));
+                    
+                    // 加上網址參數
+                    const url = new URL(window.location);
+                    url.searchParams.set('admin', ADMIN_PASSWORD);
+                    window.history.pushState({}, '', url);
+
+                    showToast("🔓 密碼正確！已解鎖所有編輯與存檔權限", "success");
+                    
+                    // 重新渲染畫面以啟用拖曳功能
+                    deserializeState(serializeState());
+                } else if (pwd !== null) {
+                    showToast("❌ 密碼錯誤", "error");
+                }
+            }
+        }
+
         function checkPermissionsAndInitFirebase() {
             const urlParams = new URLSearchParams(window.location.search);
             const adminQuery = urlParams.get('admin');
             
             if (adminQuery === ADMIN_PASSWORD) {
                 isAdmin = true;
+                document.body.classList.remove('read-only-mode');
                 document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.remove('hidden'));
                 document.getElementById('role-badge').innerText = "✍️ 管理員模式";
-                document.getElementById('role-badge').className = "bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded font-bold";
-                showToast("🔐 已解鎖管理員編輯與雲端儲存權限", "success");
+                document.getElementById('role-badge').className = "cursor-pointer bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-green-200 transition-colors shadow-sm";
+                document.getElementById('sidebar-help-text').innerHTML = "將卡片拖至左側。雙擊課表卡片可微調該堂助教。<br>點擊「老師名稱」可高亮老師的課。";
             } else {
                 isAdmin = false;
                 document.body.classList.add('read-only-mode');
                 document.getElementById('role-badge').innerText = "👁️ 唯讀展示模式";
-                document.getElementById('role-badge').className = "bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold";
+                document.getElementById('role-badge').className = "cursor-pointer bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-blue-200 transition-colors shadow-sm";
                 document.getElementById('sidebar-help-text').innerHTML = "💡 唯讀模式下無法修改課表。您可以點擊老師姓名高亮追蹤特定師資課表。";
-                showToast("👁️ 目前為唯讀檢視模式", "info");
             }
 
             if (firebaseConfig.projectId && firebaseConfig.apiKey) {
@@ -842,7 +889,6 @@
             
             // 補齊顏色
             Object.values(coursePool).forEach(c => { if(!c.color) c.color = getNextColor(); });
-            renderPool();
 
             const loadSched = (src, dest, classId) => {
                 if(!src) return;
@@ -864,6 +910,9 @@
             };
             loadSched(state.schedA, scheduleA, 'A');
             loadSched(state.schedB, scheduleB, 'B');
+            
+            // 必須在載入完課表後再渲染課程庫 (計算剩餘數量)
+            renderPool();
             checkAllConflicts();
             applyHighlights();
         }
@@ -942,6 +991,15 @@
             setTimeout(()=>toast.classList.remove('opacity-0'), 10);
             setTimeout(()=>{ toast.classList.add('opacity-0'); setTimeout(()=>toast.remove(), 300); }, 3000);
         }
+
+        // 初始化
+        window.onload = () => {
+            renderTable('A', 0);
+            renderTable('A', 1);
+            renderTable('B', 0);
+            renderTable('B', 1);
+            checkPermissionsAndInitFirebase();
+        };
     </script>
 </body>
 </html>
