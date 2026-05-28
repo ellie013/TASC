@@ -1131,7 +1131,7 @@
 
         function updatePayrollUI() {
             const payrollData = generatePayrollData();
-            const teacher = document.getElementById('payroll-teacher-select').value;
+            const teacher = document.getElementById('payroll-teacher-select')?.value;
             const projectName = document.getElementById('payroll-project-name').value;
             const classNote = document.getElementById('payroll-class-note').value;
             const rYear = document.getElementById('payroll-year').value;
@@ -1443,7 +1443,35 @@
             summaryContainer.innerHTML = summaryHtml;
         }
 
-        // 列印目前作用中的報表
+        function openPayrollModal() {
+            if(!isAdmin) return;
+            onPayrollClassChange(); // Initialize and open
+            document.getElementById('payroll-modal').classList.remove('hidden');
+        }
+
+        function closePayrollModal() { document.getElementById('payroll-modal').classList.add('hidden'); }
+
+        function switchPayrollTab(tab) {
+            payrollActiveTab = tab;
+            const btnSingle = document.getElementById('tab-payroll-single');
+            const btnSummary = document.getElementById('tab-payroll-summary');
+            const divSingle = document.getElementById('payroll-single-preview');
+            const divSummary = document.getElementById('payroll-summary-preview');
+
+            if (tab === 'single') {
+                btnSingle.className = "py-2 px-6 font-bold border-b-2 border-indigo-600 text-indigo-700";
+                btnSummary.className = "py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600";
+                divSingle.classList.remove('hidden');
+                divSummary.classList.add('hidden');
+            } else {
+                btnSummary.className = "py-2 px-6 font-bold border-b-2 border-indigo-600 text-indigo-700";
+                btnSingle.className = "py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600";
+                divSummary.classList.remove('hidden');
+                divSingle.classList.add('hidden');
+            }
+            updatePayrollUI();
+        }
+
         function printActivePayroll() {
             if (payrollActiveTab === 'single') {
                 const content = document.getElementById('payroll-single-preview').innerHTML;
