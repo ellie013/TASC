@@ -24,7 +24,6 @@
             border: 2px dashed #0284c7 !important;
         }
         
-        /* 🎨 衝堂紅色呼吸燈警示 */
         @keyframes pulse-red {
             0%, 100% { background-color: #fee2e2; }
             50% { background-color: #fca5a5; }
@@ -34,11 +33,10 @@
             border: 2px solid #ef4444 !important;
         }
         
-        /* 凍結窗格陰影效果 */
         .sticky-col-shadow { box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         .sticky-row-shadow { box-shadow: 0 2px 5px -2px rgba(0,0,0,0.1); }
 
-        /* 列印最佳化設定 (針對一般課表與憑證黏存單) */
+        /* 列印最佳化設定 */
         @media print {
             @page { size: portrait; margin: 0.8cm; }
             body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
@@ -60,7 +58,6 @@
             .payroll-signature { margin-top: 30px; display: flex; justify-content: flex-end; }
         }
 
-        /* 高亮反白老師或單元效果 */
         @keyframes instance-glow {
             0%, 100% { box-shadow: 0 0 4px #3b82f6, inset 0 0 4px rgba(59, 130, 246, 0.3); }
             50% { box-shadow: 0 0 16px #3b82f6, inset 0 0 8px rgba(59, 130, 246, 0.5); }
@@ -72,7 +69,6 @@
             z-index: 30 !important;
         }
 
-        /* ⚠️ 尚未安排老師的特殊警示樣式 */
         .no-teacher-alert {
             border: 2px dashed #ef4444 !important;
             background-color: #fef2f2 !important;
@@ -81,13 +77,9 @@
 </head>
 <body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans text-gray-800" onclick="clearHighlightOnBackground(event)">
 
-    <!-- 列印老師課表專用容器 -->
+    <!-- 列印專用容器 -->
     <div id="print-only-container" class="hidden"></div>
-    
-    <!-- 列印印領清冊專用容器 -->
     <div id="print-payroll-container" class="hidden"></div>
-
-    <!-- 列印單人含黏存單專用容器 -->
     <div id="print-single-payroll-container" class="hidden"></div>
 
     <!-- 頂部標題與控制列 -->
@@ -101,12 +93,11 @@
             
             <!-- 📅 第一週星期一的起始日期自訂器 (僅管理員可見) -->
             <div class="admin-btn hidden flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 p-1.5 rounded shadow-inner">
-                <span class="text-gray-600 font-bold">📅 起始日期 (第一週星期一):</span>
-                <input type="date" id="schedule-start-date" class="border border-gray-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="2026-07-06" onchange="updateScheduleDates()">
+                <span class="text-gray-600 font-bold">📅 第一週(一) 起始日期:</span>
+                <input type="date" id="schedule-start-date" class="border border-gray-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="2025-07-07" onchange="updateScheduleDates(); saveToCloud();">
             </div>
         </div>
         <div class="flex gap-2">
-            <!-- ✨ 印領清冊 (僅管理員可見) -->
             <button onclick="openPayrollModal()" class="admin-btn hidden px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded transition text-sm font-medium border border-indigo-200">
                 💰 印領清冊
             </button>
@@ -137,7 +128,6 @@
         <!-- 課表區 (80%) -->
         <div class="w-[80%] flex flex-col min-w-0 flex-shrink-0 print:w-full print:block">
             
-            <!-- 班級切換 -->
             <div class="flex justify-center mb-2 shrink-0 print:hidden">
                 <div class="inline-flex bg-gray-200 rounded-lg p-1 shadow-inner">
                     <button id="btn-view-a" onclick="switchView('A')" class="px-8 py-1 bg-blue-600 text-white font-bold rounded-md shadow-sm text-sm tracking-widest">
@@ -192,25 +182,6 @@
         </aside>
     </main>
 
-    <!-- 老師課表檢視 Modal -->
-    <div id="teacher-schedule-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
-        <div class="bg-white rounded-lg p-5 w-[900px] max-w-[95vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">🧑‍🏫 教師專屬課表檢視</h2>
-                <button onclick="closeTeacherScheduleModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
-            </div>
-            <div class="flex gap-3 mb-4 shrink-0">
-                <select id="teacher-select" class="border border-gray-300 rounded p-2 flex-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500" onchange="renderTeacherSchedule()">
-                </select>
-                <button onclick="printTeacherSchedule()" class="px-5 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-sm flex items-center gap-2 transition-colors">
-                    🖨️ 列印此老師課表
-                </button>
-            </div>
-            <div id="teacher-schedule-container" class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar">
-            </div>
-        </div>
-    </div>
-
     <!-- ✨ 鐘點費印領清冊 Modal -->
     <div id="payroll-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
         <div class="bg-white rounded-lg p-5 w-[980px] max-w-[98vw] h-[90vh] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
@@ -219,14 +190,12 @@
                 <button onclick="closePayrollModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
             </div>
             
-            <!-- 參數設定控制面板 -->
             <div class="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100 grid grid-cols-4 gap-3 text-xs mb-3 shrink-0">
                 <div class="col-span-2">
                     <label class="block font-bold text-gray-700 mb-1">工作計畫名稱</label>
                     <input type="text" id="payroll-project-name" class="w-full border border-gray-300 rounded p-1" value="114年夏日樂學計畫方案-本土語文活動課程及方案二整合式學習方案" oninput="updatePayrollUI()">
                 </div>
                 <div>
-                    <!-- ✨ 新增：統計班別，甲乙班清冊分開做 -->
                     <label class="block font-bold text-indigo-900 mb-1">統計班別</label>
                     <select id="payroll-class-select" class="w-full border border-indigo-300 bg-indigo-50 rounded p-1 font-bold text-indigo-800" onchange="onPayrollClassChange()">
                         <option value="A">甲班</option>
@@ -258,10 +227,8 @@
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">選擇統計老師</label>
                     <select id="payroll-teacher-select" class="w-full border border-gray-300 rounded p-1 font-bold text-indigo-800" onchange="onPayrollTeacherChange()">
-                        <!-- 老師清單由 JS 產生 -->
                     </select>
                 </div>
-                <!-- ✨ 新增：輸入身分證與地址的欄位，直接動態綁定 -->
                 <div>
                     <label class="block font-bold text-indigo-900 mb-1">講師身分證字號</label>
                     <input type="text" id="payroll-teacher-id" class="w-full border border-indigo-200 bg-indigo-50/50 rounded p-1" placeholder="例如: A123456789" oninput="saveTeacherInfo()">
@@ -283,19 +250,13 @@
                 </div>
             </div>
 
-            <!-- 分頁標籤 -->
             <div class="flex border-b border-gray-200 mb-2 shrink-0 text-sm">
                 <button id="tab-payroll-single" onclick="switchPayrollTab('single')" class="py-2 px-6 font-bold border-b-2 border-indigo-600 text-indigo-700">📄 1人單面含支出憑證黏存單</button>
                 <button id="tab-payroll-summary" onclick="switchPayrollTab('summary')" class="py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600">📊 全員彙整統計總清單</button>
             </div>
 
             <div class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar relative">
-                <!-- 1人含黏存單預覽區 -->
-                <div id="payroll-single-preview" class="space-y-4">
-                    <!-- 由 JS 動態產生 -->
-                </div>
-
-                <!-- 彙整統計總表預覽區 -->
+                <div id="payroll-single-preview" class="space-y-4"></div>
                 <div id="payroll-summary-preview" class="hidden">
                     <div id="payroll-summary-container"></div>
                 </div>
@@ -306,6 +267,25 @@
                 <button id="btn-print-payroll" onclick="printActivePayroll()" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2 transition-colors">
                     🖨️ 列印報表 (自動排版)
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 老師課表檢視 Modal -->
+    <div id="teacher-schedule-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
+        <div class="bg-white rounded-lg p-5 w-[900px] max-w-[95vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">🧑‍🏫 教師專屬課表檢視</h2>
+                <button onclick="closeTeacherScheduleModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <div class="flex gap-3 mb-4 shrink-0">
+                <select id="teacher-select" class="border border-gray-300 rounded p-2 flex-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500" onchange="renderTeacherSchedule()">
+                </select>
+                <button onclick="printTeacherSchedule()" class="px-5 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-sm flex items-center gap-2 transition-colors">
+                    🖨️ 列印此老師課表
+                </button>
+            </div>
+            <div id="teacher-schedule-container" class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar">
             </div>
         </div>
     </div>
@@ -431,23 +411,20 @@
 
         let db = null;
         let isAdmin = false;
-        let payrollActiveTab = "single"; // "single" 或 "summary"
-        let teacherMetadata = {}; // 儲存身分證字號與戶籍地址： { "高美玉": { id: "A123...", address: "彰化縣..." } }
+        let payrollActiveTab = "single"; 
+        let teacherMetadata = {}; 
 
-        // 🔑 視覺化一鍵切換管理員模式
         function toggleAdminMode() {
             if (isAdmin) {
                 isAdmin = false;
                 document.body.classList.add('read-only-mode');
                 document.getElementById('role-badge').innerText = "👁️ 唯讀展示模式";
                 document.getElementById('role-badge').className = "cursor-pointer bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-blue-200 transition-colors shadow-sm";
-                document.getElementById('sidebar-help-text').innerHTML = "💡 唯讀模式下無法修改課表。您可以點擊老師姓名高亮追蹤特定師資課表。";
                 document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.add('hidden'));
                 
                 const url = new URL(window.location);
                 url.searchParams.delete('admin');
                 window.history.pushState({}, '', url);
-
                 showToast("🔒 已登出，切換為唯讀模式", "info");
                 deserializeState(JSON.parse(JSON.stringify(serializeState())));
             } else {
@@ -457,13 +434,11 @@
                     document.body.classList.remove('read-only-mode');
                     document.getElementById('role-badge').innerText = "✍️ 管理員模式";
                     document.getElementById('role-badge').className = "cursor-pointer bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-green-200 transition-colors shadow-sm";
-                    document.getElementById('sidebar-help-text').innerHTML = "將卡片拖至左側。雙擊課表卡片可微調該堂助教。<br>點擊「老師名稱」可高亮老師的課。";
                     document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.remove('hidden'));
                     
                     const url = new URL(window.location);
                     url.searchParams.set('admin', ADMIN_PASSWORD);
                     window.history.pushState({}, '', url);
-
                     showToast("🔓 密碼正確！已解鎖所有編輯與存檔權限", "success");
                     deserializeState(JSON.parse(JSON.stringify(serializeState())));
                 } else if (pwd !== null) {
@@ -482,13 +457,11 @@
                 document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.remove('hidden'));
                 document.getElementById('role-badge').innerText = "✍️ 管理員模式";
                 document.getElementById('role-badge').className = "cursor-pointer bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-green-200 transition-colors shadow-sm";
-                document.getElementById('sidebar-help-text').innerHTML = "將卡片拖至左側。雙擊課表卡片可微調該堂助教。<br>點擊「老師名稱」可高亮老師的課。";
             } else {
                 isAdmin = false;
                 document.body.classList.add('read-only-mode');
                 document.getElementById('role-badge').innerText = "👁️ 唯讀展示模式";
                 document.getElementById('role-badge').className = "cursor-pointer bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold hover:bg-blue-200 transition-colors shadow-sm";
-                document.getElementById('sidebar-help-text').innerHTML = "💡 唯讀模式下無法修改課表。您可以點擊老師姓名高亮追蹤特定師資課表。";
             }
 
             if (firebaseConfig.projectId && firebaseConfig.apiKey) {
@@ -497,7 +470,6 @@
                     db = firebase.firestore();
                     loadFromCloud();
                 } catch(e) {
-                    console.error(e);
                     showToast("☁️ 雲端服務載入失敗，使用本機最新狀態", "warning");
                 }
             } else {
@@ -508,7 +480,7 @@
         }
 
         // ==========================================
-        // 📅 起始日期 & 課表日期格線動態計算 (對應 圖二)
+        // 📅 起始日期 & 課表日期格線動態計算
         // ==========================================
         function getScheduleDate(dayIndex) {
             const startDateInput = document.getElementById('schedule-start-date');
@@ -516,8 +488,6 @@
             const baseDate = new Date(startDateInput.value);
             if (isNaN(baseDate.getTime())) return "";
             
-            // dayIndex: 0-4 (第一週一至五), 5-9 (第二週一至五)
-            // 由於跳過週末 (六、日)，故第二週要額外加上 2 天的偏移
             let daysOffset = dayIndex;
             if (dayIndex >= 5) {
                 daysOffset = dayIndex + 2;
@@ -529,16 +499,40 @@
             return `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
         }
 
-        // 重新繪製、更新所有課表表頭的實體日期
         function updateScheduleDates() {
             document.querySelectorAll('.schedule-date-label').forEach(el => {
                 const d = parseInt(el.dataset.day);
                 el.innerText = getScheduleDate(d);
             });
-            // 動態同步更新印領清冊
             if (document.getElementById('payroll-modal') && !document.getElementById('payroll-modal').classList.contains('hidden')) {
                 updatePayrollUI();
             }
+        }
+
+        // 將日期 Set 轉換為中文格式 (例如：7月8、9、18日)
+        function formatDatesChinese(daysSet) {
+            if (!daysSet || daysSet.size === 0) return "";
+            const sortedDays = Array.from(daysSet).sort((a,b)=>a-b);
+            const startDateInput = document.getElementById('schedule-start-date');
+            const baseDate = new Date(startDateInput.value);
+            if (isNaN(baseDate.getTime())) return "";
+            
+            let monthMap = {};
+            sortedDays.forEach(dayIndex => {
+                let offset = dayIndex >= 5 ? dayIndex + 2 : dayIndex;
+                let d = new Date(baseDate);
+                d.setDate(baseDate.getDate() + offset);
+                let m = d.getMonth() + 1;
+                let date = d.getDate();
+                if(!monthMap[m]) monthMap[m] = [];
+                monthMap[m].push(date);
+            });
+            
+            let result = [];
+            for (let m in monthMap) {
+                result.push(`${m}月${monthMap[m].join('、')}日`);
+            }
+            return result.join('，');
         }
 
         // ==========================================
@@ -577,7 +571,6 @@
                 html += `
                     <th class="sticky top-0 z-20 ${bgClass} border border-gray-300 p-1 min-w-[100px] text-xs text-gray-700 sticky-row-shadow font-bold">
                         <div>${days[d]}</div>
-                        <!-- ✨ 新增：表頭日期標記 (對應圖二) -->
                         <div class="text-[10px] text-gray-500 font-normal schedule-date-label" data-day="${d}"></div>
                     </th>`;
             }
@@ -620,9 +613,6 @@
             renderPool();
         }
 
-        // ==========================================
-        // 🧑‍🏫 3. 師資解析與高亮/反白邏輯
-        // ==========================================
         function isTeacherMissing(course) { return !course.mainTeacher || course.mainTeacher === '未指定' || course.mainTeacher.trim() === ''; }
 
         function getTeachersListForCourseId(courseId) {
@@ -694,9 +684,6 @@
             scanHighlight(scheduleA, 'A'); scanHighlight(scheduleB, 'B');
         }
 
-        // ==========================================
-        // ⚡ 4. 衝堂偵測機制
-        // ==========================================
         function getConflictingTeachers(instA, instB) {
             if (!instA || !instB) return [];
             const tA = getTeachersListForInstance(instA);
@@ -741,9 +728,6 @@
             }
         }
 
-        // ==========================================
-        // 🔄 5. 拖曳控制邏輯 (管理員限定)
-        // ==========================================
         function dragStart(ev, type, id) {
             if (!isAdmin) return;
             const payload = { type: type };
@@ -833,9 +817,6 @@
             if (classId === 'B') scheduleB[day][period] = data;
         }
 
-        // ==========================================
-        // 🖨️ 6. UI 視窗與課程庫增刪修渲染
-        // ==========================================
         function renderPool() {
             const container = document.getElementById('pool-container');
             container.innerHTML = '';
@@ -967,17 +948,14 @@
         // ==========================================
         // ✨ 鐘點費印領清冊 (Payroll) 核心引擎與核銷黏存單
         // ==========================================
-        
-        // 1. 班別統計切換監聽 (甲班/乙班清冊分開做)
         function onPayrollClassChange() {
             const classSelect = document.getElementById('payroll-class-select').value;
             document.getElementById('payroll-class-note').value = classSelect === 'A' ? '甲班' : '乙班';
             
-            // 重新載入對應班級的老師清單
             const select = document.getElementById('payroll-teacher-select');
             select.innerHTML = '';
             
-            const payrollData = generatePayrollData(); // 已自動根據新班別做篩選
+            const payrollData = generatePayrollData(); 
             const teachers = Object.keys(payrollData).sort();
             if(teachers.length === 0) {
                 select.innerHTML = '<option value="">-- 此班別目前無講師排課紀錄 --</option>';
@@ -992,13 +970,11 @@
             updatePayrollUI();
         }
 
-        // 當選定不同的統計老師，動態載入並填寫身分證與地址
         function onPayrollTeacherChange() {
             const select = document.getElementById('payroll-teacher-select');
             const teacherName = select ? select.value : '';
             if (!teacherName) return;
             
-            // 讀取已經儲存的師資 Metadata，如果沒有則填入預設空白值
             const meta = teacherMetadata[teacherName] || { id: "", address: "" };
             document.getElementById('payroll-teacher-id').value = meta.id || "";
             document.getElementById('payroll-teacher-address').value = meta.address || "";
@@ -1006,7 +982,6 @@
             updatePayrollUI();
         }
 
-        // 當使用者輸入或修改講師的身分證或地址，即時寫入暫存並重新渲染預覽
         function saveTeacherInfo() {
             const select = document.getElementById('payroll-teacher-select');
             const teacherName = select ? select.value : '';
@@ -1019,15 +994,15 @@
             teacherMetadata[teacherName].address = document.getElementById('payroll-teacher-address').value.trim();
             
             updatePayrollUI();
+            // 不在輸入當下立刻 saveToCloud() 避免過度頻繁的寫入，使用者需點擊頂部存檔
         }
 
-        // 2. 自動從課表中掃描、分類、並統計主教/助教時數、天數 (甲、乙班完全獨立分開)
         function generatePayrollData() {
-            const payroll = {}; // { "王老師": { main: { periods, days:[] }, ta: { periods, days:[] } } }
+            const payroll = {}; 
             const classSelect = document.getElementById('payroll-class-select')?.value || 'A';
 
             const addRecord = (teacher, classId, dayIndex, role, unit) => {
-                if (classId !== classSelect) return; // 🛡️ 關鍵：僅統計目前選擇的班級
+                if (classId !== classSelect) return; 
                 if (!teacher || teacher === '未指定' || teacher.trim() === '') return;
                 teacher = teacher.trim();
                 if (!payroll[teacher]) {
@@ -1039,7 +1014,7 @@
                 
                 if (role === '主教') {
                     payroll[teacher].main.periods++;
-                    payroll[teacher].main.days.add(dayIndex); // 記錄上課日期索引
+                    payroll[teacher].main.days.add(dayIndex); 
                     payroll[teacher].main.units.add(unit);
                 } else {
                     payroll[teacher].ta.periods++;
@@ -1070,7 +1045,7 @@
             return payroll;
         }
 
-        // ✨ 動態產生極為精準、完全與 Excel 說明事項一致的中文公務簽呈備註內容
+        // 動態產生精準說明
         function generateSingleTeacherExplanation(teacherName, data, mainRate, taRate, employerNHI, employeeNHI, netAmount, baseAmount) {
             const rYear = document.getElementById('payroll-year').value;
             const projectName = document.getElementById('payroll-project-name').value;
@@ -1078,57 +1053,38 @@
             
             let mainExpl = "";
             if (data.main.periods > 0) {
-                const sortedDays = Array.from(data.main.days).sort((a,b)=>a-b);
-                const formattedDates = sortedDays.map(d => {
-                    const dateStr = getScheduleDate(d);
-                    return `114年${dateStr}`;
-                }).join('、');
-                
+                let datesMain = formatDatesChinese(data.main.days);
                 const mainTotal = data.main.periods * mainRate;
-                const mainEmpNHI = Math.round(mainTotal * 0.0211);
-                const mainSelfNHI = (!document.getElementById('payroll-is-internal').checked && !document.getElementById('payroll-is-union').checked && mainTotal >= 5000) ? Math.round(mainTotal * 0.02) : 0;
-                const mainNet = mainTotal - mainSelfNHI;
-
-                mainExpl = `本校辦理夏日樂學計畫，聘請講師 <strong>${teacherName}</strong> 擔任<strong>主教老師</strong>，授課時間 <strong>${formattedDates}</strong>，共計 <strong>${data.main.periods}</strong> 節，每節 ${mainRate} 元，共計新台幣 ${mainTotal} 元整。`;
-                if (mainSelfNHI > 0) {
-                    mainExpl += `依法代扣補充保費自付額 2% 計 ${mainSelfNHI} 元，實領 ${mainNet} 元。機關負擔補充保費 2.11% 計 ${mainEmpNHI} 元。`;
-                } else {
-                    mainExpl += `未達代扣起點（自付額 2% 計 0 元），實領 ${mainNet} 元。機關負擔補充保費 2.11% 計 ${mainEmpNHI} 元。`;
-                }
+                mainExpl = `本校辦理「${projectName}」，聘請講師 <strong>${teacherName}</strong> 擔任<strong>主教老師</strong>，授課時間 <strong>${rYear}年${datesMain}</strong>，共計 <strong>${data.main.periods}</strong> 節，每節 ${mainRate} 元，共計新台幣 ${mainTotal} 元整。`;
             }
 
             let taExpl = "";
             if (data.ta.periods > 0) {
-                const sortedDays = Array.from(data.ta.days).sort((a,b)=>a-b);
-                const formattedDates = sortedDays.map(d => {
-                    const dateStr = getScheduleDate(d);
-                    return `114年${dateStr}`;
-                }).join('、');
-                
+                let datesTA = formatDatesChinese(data.ta.days);
                 const taTotal = data.ta.periods * taRate;
-                const taEmpNHI = Math.round(taTotal * 0.0211);
-                const taSelfNHI = (!document.getElementById('payroll-is-internal').checked && !document.getElementById('payroll-is-union').checked && taTotal >= 5000) ? Math.round(taTotal * 0.02) : 0;
-                const taNet = taTotal - taSelfNHI;
-
-                taExpl = `聘請講師 <strong>${teacherName}</strong> 擔任<strong>助教老師</strong>，授課時間 <strong>${formattedDates}</strong>，共計 <strong>${data.ta.periods}</strong> 節，每節 ${taRate} 元，共計新台幣 ${taTotal} 元整。`;
-                if (taSelfNHI > 0) {
-                    taExpl += `依法代扣補充保費自付額 2% 計 ${taSelfNHI} 元，實領 ${taNet} 元。機關負擔補充保費 2.11% 計 ${taEmpNHI} 元。`;
-                } else {
-                    taExpl += `未達代扣起點（自付額 2% 計 0 元），實領 ${taNet} 元。機關負擔補充保費 2.11% 計 ${taEmpNHI} 元。`;
-                }
+                taExpl = `聘請講師 <strong>${teacherName}</strong> 擔任<strong>助教老師</strong>，授課時間 <strong>${rYear}年${datesTA}</strong>，共計 <strong>${data.ta.periods}</strong> 節，每節 ${taRate} 元，共計新台幣 ${taTotal} 元整。`;
             }
-
-            let html = `<div class="mt-4 border border-gray-300 p-3 rounded bg-gray-50 text-xs text-gray-700 leading-relaxed text-left print:border-none print:p-0">`;
-            html += `<div class="font-bold text-gray-900 border-b pb-1 mb-2">📋 支出憑證說明事項 (動態產生)</div>`;
+            
+            let html = `<div class="mt-2 text-[11px] text-black leading-relaxed text-left font-sans print:mt-1">`;
+            html += `<div class="font-bold mb-1">說明事項：</div>`;
             html += `<ol class="list-decimal pl-4 space-y-1">`;
             html += `<li>本案依據彰化縣政府 <strong>${rYear}年5月15日府教社字第${rYear}0182600號函</strong> 辦理。</li>`;
             if (mainExpl) html += `<li>${mainExpl}</li>`;
             if (taExpl) html += `<li>${taExpl}</li>`;
-            html += `<li>全案共計應付講師鐘點費新台幣 <strong>${baseAmount}</strong> 元整，機關自付額補充保費共計 <strong>${employerNHI}</strong> 元整，自付額代扣補充保費共計 <strong>${employeeNHI}</strong> 元整，實撥新台幣 <strong>${netAmount}</strong> 元整。合計動用新台幣 <strong>${baseAmount + employerNHI}</strong> 元。</li>`;
+            
+            let desc3 = `全案共計應付講師鐘點費新台幣 <strong>${baseAmount}</strong> 元整，`;
+            if (employeeNHI > 0) {
+                desc3 += `依法代扣補充保費自付額 2% 計 <strong>${employeeNHI}</strong> 元，實領 <strong>${netAmount}</strong> 元；`;
+            } else {
+                desc3 += `依法代扣補充保費自付額 2% 計 <strong>0</strong> 元(符合免扣規定或未達代扣起點)，實領 <strong>${netAmount}</strong> 元；`;
+            }
+            desc3 += `機關負擔補充保費 2.11% 計 <strong>${employerNHI}</strong> 元，合計動用新台幣 <strong>${baseAmount + employerNHI}</strong> 元。`;
+            html += `<li>${desc3}</li>`;
             html += `</ol></div>`;
             return html;
         }
 
+        // 核心渲染邏輯 (對齊 Excel 範本)
         function updatePayrollUI() {
             const payrollData = generatePayrollData();
             const teacher = document.getElementById('payroll-teacher-select')?.value;
@@ -1141,78 +1097,82 @@
             const isInternal = document.getElementById('payroll-is-internal').checked;
             const isUnion = document.getElementById('payroll-is-union').checked;
 
-            // 1. 渲染單人含黏存單
             const singleContainer = document.getElementById('payroll-single-preview');
             if (!teacher || !payrollData[teacher]) {
                 singleContainer.innerHTML = `<div class="text-center py-10 text-gray-500 font-bold">目前此班別、此講師尚無排課紀錄。</div>`;
             } else {
                 const data = payrollData[teacher];
-                
-                // 讀取該名老師最新的 ID 與地址
                 const meta = teacherMetadata[teacher] || { id: "", address: "" };
                 const idNumber = meta.id || "未指定 (請於上方輸入)";
                 const address = meta.address || "未指定 (請於上方輸入)";
                 
-                // 計算日期摘要與節數
                 let dateDescriptions = [];
                 let totalPeriods = 0;
                 let baseAmount = 0;
                 
-                // 主教時數
                 if (data.main.periods > 0) {
                     totalPeriods += data.main.periods;
                     baseAmount += data.main.periods * mainRate;
-                    const sortedDays = Array.from(data.main.days).sort((a,b)=>a-b);
-                    const formattedDates = sortedDays.map(d => `${getScheduleDate(d)}日`).join('、');
-                    dateDescriptions.push(`${rYear}年${formattedDates}，每日4堂課，共計 ${data.main.periods} 堂課(主教老師)`);
+                    let datesMain = formatDatesChinese(data.main.days);
+                    dateDescriptions.push(`${rYear}年${datesMain}，每日4堂課，共計 ${data.main.periods} 堂課(主教老師)`);
                 }
                 
-                // 助教時數
                 if (data.ta.periods > 0) {
                     totalPeriods += data.ta.periods;
                     baseAmount += data.ta.periods * taRate;
-                    const sortedDays = Array.from(data.ta.days).sort((a,b)=>a-b);
-                    const formattedDates = sortedDays.map(d => `${getScheduleDate(d)}日`).join('、');
-                    dateDescriptions.push(`${rYear}年${formattedDates}，每日4堂課，共計 ${data.ta.periods} 堂課(助教老師)`);
+                    let datesTA = formatDatesChinese(data.ta.days);
+                    dateDescriptions.push(`${rYear}年${datesTA}，每日4堂課，共計 ${data.ta.periods} 堂課(助教老師)`);
                 }
 
-                // 健保補充保費試算
-                const employerNHI = Math.round(baseAmount * 0.0211); // 機關自付 2.11%
+                const employerNHI = Math.round(baseAmount * 0.0211); 
                 const needsEmployeeNHI = !isInternal && !isUnion && baseAmount >= 5000;
-                const employeeNHI = needsEmployeeNHI ? Math.round(baseAmount * 0.02) : 0; // 自付 2%
+                const employeeNHI = needsEmployeeNHI ? Math.round(baseAmount * 0.02) : 0; 
                 const netAmount = baseAmount - employeeNHI;
-                const totalVoucherAmount = baseAmount + employerNHI; // 憑證黏存單實核金額
+                const totalVoucherAmount = baseAmount + employerNHI;
 
-                // ✨ 修正核銷印領清冊表格 (對應 圖一、紅框往右移，將節數與單價垂直合併為一欄，金額往右移)
+                // 決定 Rowspan 長度
+                const hasMain = data.main.periods > 0;
+                const hasTa = data.ta.periods > 0;
+                const totalRows = (hasMain ? 2 : 0) + (hasTa ? 2 : 0);
+
+                // ✨ 修正核銷印領清冊表格
                 let singleHtml = `
-                    <!-- 憑證黏存單外觀 (A4 上半部) -->
-                    <div class="bg-white border-2 border-double border-gray-400 p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm">
-                        <div class="text-center font-bold text-lg mb-2 tracking-wider">彰化縣芬園鄉同安國民小學</div>
-                        <div class="flex justify-between items-center mb-2">
-                            <div>所屬年度：民國 <span class="font-bold border-b border-black px-2">${rYear}</span> 年度</div>
-                            <div class="text-xl font-bold tracking-widest text-gray-800 border-2 border-black px-3 py-1 bg-gray-50 rounded">支 出 憑 證 黏 存 單</div>
-                            <div class="text-xs">傳票編號：____________</div>
+                    <!-- 憑證黏存單外觀 -->
+                    <div class="bg-white border-2 border-double border-gray-400 p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm print:p-2">
+                        <div class="text-center font-bold text-lg mb-2 tracking-widest">彰化縣芬園鄉同安國民小學</div>
+                        <div class="flex justify-between items-end mb-2">
+                            <div class="space-y-1">
+                                <div>所屬年度： 民國 <span class="font-bold px-1">${rYear}</span> 年度</div>
+                                <div>傳票(付款憑單)編號：</div>
+                                <div>黏貼單據　　　　張</div>
+                            </div>
+                            <div class="text-xl font-bold tracking-widest text-gray-900 border-2 border-black px-4 py-2 bg-gray-50 rounded">
+                                支  出  憑  證  黏  存  單
+                            </div>
+                            <div class="text-right space-y-1">
+                                <div>款項代墊人</div>
+                                <div>姓名：　　　　　 <span class="text-xs text-gray-600">(蓋職名章)</span></div>
+                            </div>
                         </div>
-                        <div class="text-xs text-right mb-1">黏貼單據共 ______ 張</div>
                         
                         <!-- 黏存單表格 -->
-                        <table class="w-full border-collapse border border-black text-xs text-left mb-6">
+                        <table class="w-full border-collapse border border-black text-xs text-center mb-6 print:mb-4">
                             <tbody>
                                 <tr>
-                                    <td class="border border-black bg-gray-100 p-2 font-bold w-24 text-center">工作計畫</td>
-                                    <td class="border border-black p-2 col-span-3">${projectName}(${classNote})</td>
-                                    <td class="border border-black bg-gray-100 p-2 font-bold w-24 text-center">金額</td>
+                                    <td class="border border-black p-2 w-16">第　　號</td>
+                                    <td class="border border-black bg-gray-100 p-2 font-bold w-24">金　　額</td>
+                                    <td class="border border-black p-2 w-20">工作計畫</td>
+                                    <td class="border border-black p-2 text-left">應付代收款</td>
                                 </tr>
                                 <tr>
-                                    <td class="border border-black bg-gray-100 p-2 font-bold text-center">用途別</td>
-                                    <td class="border border-black p-2">應付代收款 (健保自付/機關撥提款)</td>
-                                    <td class="border border-black p-2 font-bold text-base text-center" rowspan="2">
-                                        $${totalVoucherAmount}
-                                    </td>
+                                    <td class="border border-black p-2" rowspan="2"></td>
+                                    <td class="border border-black p-2 font-bold text-base" rowspan="2">$${totalVoucherAmount}</td>
+                                    <td class="border border-black p-2">用 途 別</td>
+                                    <td class="border border-black p-2 text-left">${projectName}(${classNote})</td>
                                 </tr>
                                 <tr>
-                                    <td class="border border-black bg-gray-100 p-2 font-bold text-center">用途摘要</td>
-                                    <td class="border border-black p-2">${abstract}</td>
+                                    <td class="border border-black p-2">用途摘要</td>
+                                    <td class="border border-black p-2 text-left">${abstract}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1243,111 +1203,95 @@
                     </div>
 
                     <!-- ✂️ 憑證粘貼裁切線 -->
-                    <div class="flex items-center justify-center text-xs text-gray-500 font-mono tracking-widest my-4 select-none max-w-[850px] mx-auto border-t border-dashed border-gray-400 pt-2">
+                    <div class="flex items-center justify-center text-xs text-gray-500 font-mono tracking-widest my-4 select-none max-w-[850px] mx-auto border-t border-dashed border-gray-400 pt-2 print:my-2">
                         ✂️----------------憑--------證--------黏--------貼--------線----------------✂️
                     </div>
 
-                    <!-- 講師鐘點費印領清冊 (A4 下半部) -->
-                    <div class="bg-white border border-gray-300 p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm">
+                    <!-- 講師鐘點費印領清冊 -->
+                    <div class="bg-white border border-gray-300 p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm print:p-2 print:border-none">
                         <div class="text-center font-bold text-base mb-1">彰化縣芬園鄉同安國民小學</div>
-                        <div class="text-center font-bold text-lg mb-4 tracking-wider">講師鐘點費印領清冊</div>
+                        <div class="text-center font-bold text-lg mb-2 tracking-wider">講師鐘點費印領清冊</div>
                         
                         <!-- 說明詳細欄位 -->
-                        <div class="grid grid-cols-4 gap-2 text-xs border border-black p-3 mb-4 rounded bg-gray-50/50">
-                            <div class="col-span-4 flex"><span class="font-bold w-24 shrink-0">授課日期時間:</span><span class="text-gray-800 text-left">${dateDescriptions.join('；')}</span></div>
-                            <div class="col-span-4 flex"><span class="font-bold w-24 shrink-0">授課題目:</span><span class="text-gray-800 text-left">暑期樂學本土語活動，詳如教師簽到表及教學日誌。</span></div>
-                            <div class="col-span-2 flex"><span class="font-bold w-24 shrink-0">服務單位:</span><span class="text-gray-800 text-left">同安國小</span></div>
-                            <div class="col-span-2 flex"><span class="font-bold w-24 shrink-0">班別計畫:</span><span class="text-gray-800 text-left">${projectName}(${classNote})</span></div>
+                        <div class="text-left text-xs font-bold mb-2 space-y-1">
+                            <div class="flex"><div class="w-24 shrink-0">授課日期時間：</div><div class="font-normal">${dateDescriptions.join('；')}</div></div>
+                            <div class="flex"><div class="w-24 shrink-0">授課題目：</div><div class="font-normal">上課時數，詳如教師簽到表。</div></div>
+                            <div class="flex"><div class="w-24 shrink-0">服務單位：</div><div class="font-normal">同安國小</div></div>
                         </div>
 
-                        <!-- ✨ Roster 專業清冊表格：完全修正對齊格式 -->
-                        <table class="w-full border-collapse border border-black text-xs text-center mb-6">
+                        <!-- ✨ 專業清冊表格 -->
+                        <table class="w-full border-collapse border border-black text-xs text-center mb-2">
                             <thead>
-                                <tr class="bg-gray-100 font-bold border-b border-black text-center">
-                                    <th class="border border-black p-2 w-24" rowspan="2">姓名 /<br>身分證字號</th>
+                                <tr class="font-bold border-b border-black text-center bg-gray-100">
+                                    <th class="border border-black p-2 w-28">姓&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;名</th>
                                     <th class="border border-black p-2 w-16">節數</th>
-                                    <th class="border border-black p-2 w-20" rowspan="2">金額</th>
+                                    <th class="border border-black p-2 w-20" rowspan="2">金&nbsp;&nbsp;額</th>
                                     <th class="border border-black p-2" colspan="2">健保補充保費</th>
                                     <th class="border border-black p-2 w-20" rowspan="2">實領金額<br>(元)</th>
-                                    <th class="border border-black p-2 w-28" rowspan="2">簽章</th>
+                                    <th class="border border-black p-2 w-28" rowspan="2">簽&nbsp;&nbsp;章</th>
                                     <th class="border border-black p-2" rowspan="2">戶籍住址 / 備註</th>
                                 </tr>
-                                <tr class="bg-gray-50 font-bold border-b border-black">
-                                    <th class="border border-black p-1">元/節</th>
-                                    <th class="border border-black p-1 text-[10px]">機關自付(2.11%)</th>
-                                    <th class="border border-black p-1 text-[10px]">個人扣取(2%)</th>
+                                <tr class="font-bold border-b border-black text-center bg-gray-100">
+                                    <th class="border border-black p-1 text-[10px]">身分證字號</th>
+                                    <th class="border border-black p-1 text-[10px]">元/節</th>
+                                    <th class="border border-black p-1 text-[10px]">機負2.11%</th>
+                                    <th class="border border-black p-1 text-[10px]">自付2%</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- 主教一列 (如有) -->
-                                ${data.main.periods > 0 ? `
-                                <tr>
-                                    <td class="border border-black p-2 font-bold" rowspan="2">
-                                        ${teacher} 
-                                        <div class="text-[9px] font-mono font-normal text-gray-500 mt-1">${idNumber}</div>
-                                    </td>
-                                    <!-- 節數 -->
-                                    <td class="border border-black p-2 font-bold">${data.main.periods}</td>
-                                    <!-- 金額 -->
-                                    <td class="border border-black p-2" rowspan="2">$${data.main.periods * mainRate}</td>
-                                    <td class="border border-black p-2" rowspan="${data.ta.periods > 0 ? '4' : '2'}">$${employerNHI}</td>
-                                    <td class="border border-black p-2" rowspan="${data.ta.periods > 0 ? '4' : '2'}">$${employeeNHI}</td>
-                                    <td class="border border-black p-2 font-bold text-indigo-700" rowspan="${data.ta.periods > 0 ? '4' : '2'}">$${netAmount}</td>
-                                    <td class="border border-black p-2 h-12 text-gray-300 relative text-left" rowspan="${data.ta.periods > 0 ? '4' : '2'}">
-                                        <div class="absolute bottom-1 right-1 text-[9px] text-gray-400">蓋章處</div>
-                                    </td>
-                                    <td class="border border-black p-2 text-left text-gray-600 text-[10px]" rowspan="${data.ta.periods > 0 ? '4' : '2'}">
-                                        <div class="font-semibold text-gray-800">${address}</div>
-                                        <div class="text-[9px] text-gray-500 mt-1">補充保費：機負$${employerNHI} / 自付$${employeeNHI}</div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <!-- 元/節 (主教單價) -->
-                                    <td class="border border-black p-1 bg-gray-50/50">$${mainRate}</td>
-                                </tr>
-                                ` : ''}
-                                
-                                <!-- 助教一列 (如有) -->
-                                ${data.ta.periods > 0 ? `
-                                <tr>
-                                    ${data.main.periods > 0 ? '' : `
-                                    <td class="border border-black p-2 font-bold" rowspan="2">
-                                        ${teacher} 
-                                        <div class="text-[9px] font-mono font-normal text-gray-500 mt-1">${idNumber}</div>
-                                    </td>
-                                    `}
-                                    <!-- 節數 -->
-                                    <td class="border border-black p-2 font-bold">${data.ta.periods}</td>
-                                    <!-- 金額 -->
-                                    <td class="border border-black p-2" rowspan="2">$${data.ta.periods * taRate}</td>
-                                    
-                                    ${data.main.periods > 0 ? '' : `
-                                    <td class="border border-black p-2" rowspan="2">$${employerNHI}</td>
-                                    <td class="border border-black p-2" rowspan="2">$${employeeNHI}</td>
-                                    <td class="border border-black p-2 font-bold text-indigo-700" rowspan="2">$${netAmount}</td>
-                                    <td class="border border-black p-2 h-12 text-gray-300 relative text-left" rowspan="2">
-                                        <div class="absolute bottom-1 right-1 text-[9px] text-gray-400">蓋章處</div>
-                                    </td>
-                                    <td class="border border-black p-2 text-left text-gray-600 text-[10px]" rowspan="2">
-                                        <div class="font-semibold text-gray-800">${address}</div>
-                                        <div class="text-[9px] text-gray-500 mt-1">補充保費：機負$${employerNHI} / 自付$${employeeNHI}</div>
-                                    </td>
-                                    `}
-                                </tr>
-                                <tr>
-                                    <!-- 元/節 (助教單價) -->
-                                    <td class="border border-black p-1 bg-gray-50/50">$${taRate}</td>
-                                </tr>
-                                ` : ''}
+                `;
 
-                                <!-- 合計列 -->
-                                <tr class="bg-gray-100 font-bold text-xs">
-                                    <td class="border border-black p-2">合計</td>
-                                    <td class="border border-black p-2" colspan="2">${totalPeriods} 節</td>
+                if (hasMain) {
+                    singleHtml += `
+                                <tr>
+                                    <td class="border border-black p-2 font-bold text-sm">${teacher}</td>
+                                    <td class="border border-black p-2 font-bold">${data.main.periods}</td>
+                                    <td class="border border-black p-2" rowspan="2">$${data.main.periods * mainRate}</td>
+                                    <td class="border border-black p-2" rowspan="${totalRows}">$${employerNHI}</td>
+                                    <td class="border border-black p-2" rowspan="${totalRows}">$${employeeNHI}</td>
+                                    <td class="border border-black p-2 font-bold text-base" rowspan="${totalRows}">$${netAmount}</td>
+                                    <td class="border border-black p-2 h-14 relative" rowspan="${totalRows}">
+                                        <span class="absolute bottom-1 right-1 text-[9px] text-gray-400">簽名處</span>
+                                    </td>
+                                    <td class="border border-black p-2 text-left" rowspan="${totalRows}">${address}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-black p-1 font-mono text-[10px] text-gray-700 bg-gray-50/50">${idNumber}</td>
+                                    <td class="border border-black p-1 bg-gray-50/50">${mainRate}</td>
+                                </tr>
+                    `;
+                }
+
+                if (hasTa) {
+                    singleHtml += `
+                                <tr>
+                                    <td class="border border-black p-2 font-bold text-sm">${teacher}</td>
+                                    <td class="border border-black p-2 font-bold">${data.ta.periods}</td>
+                                    <td class="border border-black p-2" rowspan="2">$${data.ta.periods * taRate}</td>
+                                    ${!hasMain ? `
+                                    <td class="border border-black p-2" rowspan="${totalRows}">$${employerNHI}</td>
+                                    <td class="border border-black p-2" rowspan="${totalRows}">$${employeeNHI}</td>
+                                    <td class="border border-black p-2 font-bold text-base" rowspan="${totalRows}">$${netAmount}</td>
+                                    <td class="border border-black p-2 h-14 relative" rowspan="${totalRows}">
+                                        <span class="absolute bottom-1 right-1 text-[9px] text-gray-400">簽名處</span>
+                                    </td>
+                                    <td class="border border-black p-2 text-left" rowspan="${totalRows}">${address}</td>
+                                    ` : ''}
+                                </tr>
+                                <tr>
+                                    <td class="border border-black p-1 font-mono text-[10px] text-gray-700 bg-gray-50/50">${idNumber}</td>
+                                    <td class="border border-black p-1 bg-gray-50/50">${taRate}</td>
+                                </tr>
+                    `;
+                }
+
+                singleHtml += `
+                                <tr class="font-bold text-xs bg-gray-100">
+                                    <td class="border border-black p-2 text-center" colspan="2">合&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;計</td>
                                     <td class="border border-black p-2">$${baseAmount}</td>
                                     <td class="border border-black p-2">$${employerNHI}</td>
                                     <td class="border border-black p-2">$${employeeNHI}</td>
-                                    <td class="border border-black p-2 text-indigo-700 text-left pl-3" colspan="3">實領金額新台幣：$${netAmount} 元整</td>
+                                    <td class="border border-black p-2 text-left pl-3" colspan="3">實領金額新台幣：$${netAmount} 元整</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1355,9 +1299,9 @@
                         <!-- ✨ 動態自動產生的中文公務簽呈與法規備註說明 -->
                         ${generateSingleTeacherExplanation(teacher, data, mainRate, taRate, employerNHI, employeeNHI, netAmount, baseAmount)}
 
-                        <div class="flex justify-between items-center text-xs text-gray-600 mt-4 px-2 print:mt-2">
-                            <div>講師身份別：<span class="border-b border-black px-3">${isInternal ? '內聘機關投保人員' : '外聘兼職人員'}</span></div>
-                            <div>是否代扣2%補充保費自付額：<span class="border-b border-black px-3">${needsEmployeeNHI ? '是' : '否 (符合免扣規定)'}</span></div>
+                        <div class="flex justify-between items-center text-[11px] text-gray-600 mt-2 px-2 print:mt-1">
+                            <div>講師身份別：<span class="border-b border-black px-2">${isInternal ? '內聘機關投保人員' : '外聘兼職人員'}</span></div>
+                            <div>是否代扣2%自付額：<span class="border-b border-black px-2">${needsEmployeeNHI ? '是' : '否 (符合免扣規定)'}</span></div>
                         </div>
                     </div>
                 `;
@@ -1445,7 +1389,7 @@
 
         function openPayrollModal() {
             if(!isAdmin) return;
-            onPayrollClassChange(); // Initialize and open
+            onPayrollClassChange(); 
             document.getElementById('payroll-modal').classList.remove('hidden');
         }
 
@@ -1480,10 +1424,11 @@
                 window.print();
                 document.body.classList.remove('print-mode-single-payroll');
             } else {
+                const classNote = document.getElementById('payroll-class-note').value;
                 const content = document.getElementById('payroll-summary-container').innerHTML;
                 document.getElementById('print-payroll-container').innerHTML = `
                     <div class="text-center mb-6">
-                        <h1 class="text-2xl font-bold text-gray-800">💰 鐘點費印領清冊彙整總表</h1>
+                        <h1 class="text-2xl font-bold text-gray-800">💰 鐘點費印領清冊彙整總表 (${classNote})</h1>
                         <p class="text-gray-500 mt-1">互動式排課系統彙整導出</p>
                     </div>
                     ${content}
@@ -1585,8 +1530,8 @@
                 pool: JSON.parse(JSON.stringify(coursePool)), 
                 schedA: JSON.parse(JSON.stringify(scheduleA)), 
                 schedB: JSON.parse(JSON.stringify(scheduleB)),
-                teacherMetadata: JSON.parse(JSON.stringify(teacherMetadata)), // ✨ 新增身分證/地址同步儲存
-                startDate: document.getElementById('schedule-start-date')?.value || "2026-07-06" // ✨ 新增日期自訂同步儲存
+                teacherMetadata: JSON.parse(JSON.stringify(teacherMetadata)), 
+                startDate: document.getElementById('schedule-start-date')?.value || "2025-07-07" 
             }; 
         }
         
@@ -1599,13 +1544,13 @@
             document.querySelectorAll('td.droppable').forEach(td => td.innerHTML = '');
             for(let d=0;d<10;d++)for(let p=0;p<8;p++){ scheduleA[d][p]=null; scheduleB[d][p]=null; }
             coursePool = state.pool || {};
-            teacherMetadata = state.teacherMetadata || {}; // ✨ 讀取身分證與地址
+            teacherMetadata = state.teacherMetadata || {}; 
             
             if (state.startDate) {
                 const dateInput = document.getElementById('schedule-start-date');
                 if (dateInput) dateInput.value = state.startDate;
             }
-            updateScheduleDates(); // ✨ 更新表頭實體日期
+            updateScheduleDates(); 
 
             Object.values(coursePool).forEach(c => { if(!c.color) c.color = getNextColor(); });
 
