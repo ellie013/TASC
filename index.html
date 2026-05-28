@@ -38,7 +38,7 @@
         .sticky-col-shadow { box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         .sticky-row-shadow { box-shadow: 0 2px 5px -2px rgba(0,0,0,0.1); }
 
-        /* 列印最佳化設定 */
+        /* 列印最佳化設定 (針對一般課表) */
         @media print {
             @page { size: landscape; margin: 1cm; }
             body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
@@ -49,10 +49,17 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .group-hover\:opacity-100 { display: none !important; }
 
-            body:not(.print-mode-teacher) #print-only-container { display: none !important; }
+            /* 隱藏網頁原本內容，顯示列印專用容器 */
+            body:not(.print-mode-teacher):not(.print-mode-payroll) #print-only-container { display: none !important; }
             body.print-mode-teacher > *:not(#print-only-container) { display: none !important; }
             body.print-mode-teacher #print-only-container { display: block !important; width: 100%; }
-            body.print-mode-teacher .print-page-break { page-break-before: always; }
+            
+            body.print-mode-payroll > *:not(#print-payroll-container) { display: none !important; }
+            body.print-mode-payroll #print-payroll-container { display: block !important; width: 100%; }
+            
+            .print-page-break { page-break-before: always; }
+            .payroll-box { page-break-inside: avoid; border: 1px solid #000; margin-bottom: 20px; padding: 15px; border-radius: 8px; }
+            .payroll-signature { margin-top: 30px; display: flex; justify-content: flex-end; }
         }
 
         /* 高亮反白老師或單元效果 */
@@ -76,7 +83,11 @@
 </head>
 <body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans text-gray-800" onclick="clearHighlightOnBackground(event)">
 
+    <!-- 列印老師課表專用容器 -->
     <div id="print-only-container" class="hidden"></div>
+    
+    <!-- 列印印領清冊專用容器 -->
+    <div id="print-payroll-container" class="hidden"></div>
 
     <!-- 頂部標題與控制列 -->
     <header class="flex justify-between items-center bg-white px-4 py-2 shadow-sm border-b border-gray-200 shrink-0 z-40 print:hidden">
@@ -88,7 +99,10 @@
             <span id="role-badge" onclick="toggleAdminMode()" class="cursor-pointer bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-bold hover:opacity-80 transition-opacity shadow-sm" title="點擊切換管理權限">📡 系統啟動中...</span>
         </div>
         <div class="flex gap-2">
-            <!-- 管理員專用按鈕，預設隱藏 (admin-btn) -->
+            <!-- ✨ 新增：印領清冊 (僅管理員可見) -->
+            <button onclick="openPayrollModal()" class="admin-btn hidden px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded transition text-sm font-medium border border-indigo-200">
+                💰 印領清冊
+            </button>
             <button onclick="saveToCloud()" class="admin-btn hidden px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition text-sm font-medium border border-blue-200">
                 💾 儲存進度至雲端
             </button>
@@ -186,6 +200,25 @@
                 </button>
             </div>
             <div id="teacher-schedule-container" class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar">
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨ 鐘點費印領清冊 Modal -->
+    <div id="payroll-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
+        <div class="bg-white rounded-lg p-5 w-[900px] max-w-[95vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-xl font-bold text-indigo-800 flex items-center gap-2">💰 鐘點費印領清冊 (自動統計)</h2>
+                <button onclick="closePayrollModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <div class="flex gap-3 mb-4 shrink-0 justify-between items-center">
+                <p class="text-sm text-gray-600">系統已為您自動彙整兩週內所有老師的主教/助教授課節數。</p>
+                <button onclick="printPayroll()" class="px-5 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2 transition-colors">
+                    🖨️ 列印全體清冊與簽名欄
+                </button>
+            </div>
+            <div id="payroll-container" class="flex-1 overflow-auto bg-gray-50 p-4 rounded border border-gray-200 no-scrollbar">
+                <!-- 統計資料由 JS 產生 -->
             </div>
         </div>
     </div>
@@ -299,7 +332,7 @@
         // ==========================================
         const ADMIN_PASSWORD = "123"; // 管理員認證密碼
 
-        // ⚠️ 請在這裡貼上您的 Firebase 金鑰
+        // ⚠️⚠️⚠️ 請在這裡貼上您的 Firebase 金鑰 ⚠️⚠️⚠️
           const firebaseConfig = {
       apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
       authDomain: "tasc-schedule.firebaseapp.com",
@@ -327,8 +360,6 @@
                 window.history.pushState({}, '', url);
 
                 showToast("🔒 已登出，切換為唯讀模式", "info");
-                
-                // 【修復】使用深拷貝，防止狀態切換時不小心洗掉課表資料！
                 deserializeState(JSON.parse(JSON.stringify(serializeState())));
             } else {
                 const pwd = prompt("請輸入管理員密碼以解鎖編輯權限：");
@@ -345,8 +376,6 @@
                     window.history.pushState({}, '', url);
 
                     showToast("🔓 密碼正確！已解鎖所有編輯與存檔權限", "success");
-                    
-                    // 【修復】使用深拷貝重新渲染
                     deserializeState(JSON.parse(JSON.stringify(serializeState())));
                 } else if (pwd !== null) {
                     showToast("❌ 密碼錯誤", "error");
@@ -417,7 +446,7 @@
 
         function renderTable(classId, weekIndex) {
             const container = document.getElementById(`table-${classId.toLowerCase()}-w${weekIndex + 1}-container`);
-            if (!container) return; // 防呆
+            if (!container) return; 
             
             let html = `<table class="border-collapse bg-white w-full h-full"><thead><tr><th class="sticky top-0 left-0 z-30 bg-gray-200 border border-gray-300 p-1 w-12 text-[11px] text-gray-700 sticky-col-shadow sticky-row-shadow">節數</th>`;
             for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
@@ -765,6 +794,9 @@
             }
         }
 
+        // ==========================================
+        // 🧑‍🏫 教師課表 Modal 相關
+        // ==========================================
         function openTeacherScheduleModal() {
             const set = new Set();
             Object.values(coursePool).forEach(c => getTeachersListForCourseId(c.id).forEach(t=>set.add(t)));
@@ -806,6 +838,118 @@
             document.getElementById('print-only-container').innerHTML = `<h1 class="text-xl font-bold text-center mb-4">🧑‍🏫 ${t} 老師 專屬雙週課表</h1>` + document.getElementById('teacher-schedule-container').innerHTML;
             document.body.classList.add('print-mode-teacher'); window.print(); document.body.classList.remove('print-mode-teacher');
         }
+
+        // ==========================================
+        // ✨ 鐘點費印領清冊 (Payroll) 核心引擎
+        // ==========================================
+        function generatePayrollData() {
+            const payroll = {}; // { "王老師": [ { dayName, className, role, unit, periods } ] }
+
+            const addRecord = (teacher, classId, dayIndex, role, unit) => {
+                if (!teacher || teacher === '未指定' || teacher.trim() === '') return;
+                teacher = teacher.trim();
+                if (!payroll[teacher]) payroll[teacher] = [];
+                
+                const weekStr = dayIndex < 5 ? "一" : "二";
+                const dayName = `第 ${weekStr} 週 ${days[dayIndex]}`;
+                const className = classId === 'A' ? '甲班' : '乙班';
+
+                // 檢查是否已有同一天、同班級、同身分、同單元的紀錄，若有則節數 +1
+                let existing = payroll[teacher].find(r => r.dayName === dayName && r.className === className && r.role === role && r.unit === unit);
+                if (existing) {
+                    existing.periods += 1;
+                } else {
+                    payroll[teacher].push({ dayName, className, role, unit, periods: 1 });
+                }
+            };
+
+            const scan = (sched, classId) => {
+                for (let d = 0; d < 10; d++) {
+                    for (let p = 0; p < 8; p++) {
+                        const inst = sched[d][p];
+                        if (inst && coursePool[inst.courseId]) {
+                            const unit = coursePool[inst.courseId].unit;
+                            // 記錄主教
+                            if (inst.mainTeacher) addRecord(inst.mainTeacher, classId, d, '主教', unit);
+                            // 記錄所有助教
+                            if (inst.tas) {
+                                const tasList = inst.tas.split(/[,、\s]+/).filter(t => t.trim());
+                                tasList.forEach(ta => addRecord(ta, classId, d, '助教', unit));
+                            }
+                        }
+                    }
+                }
+            };
+
+            scan(scheduleA, 'A');
+            scan(scheduleB, 'B');
+
+            return payroll;
+        }
+
+        function openPayrollModal() {
+            if(!isAdmin) return;
+            const payrollData = generatePayrollData();
+            const container = document.getElementById('payroll-container');
+            container.innerHTML = '';
+
+            const teachers = Object.keys(payrollData).sort();
+            if (teachers.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 font-bold mt-10">目前課表上尚無任何已排定的師資紀錄。</div>`;
+            } else {
+                teachers.forEach(teacher => {
+                    const records = payrollData[teacher];
+                    let totalPeriods = 0;
+                    
+                    let html = `<div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6 payroll-box">`;
+                    html += `<h3 class="text-lg font-bold text-gray-800 mb-3 border-b-2 border-indigo-500 inline-block pb-1">🧑‍🏫 ${teacher} 老師</h3>`;
+                    
+                    html += `<table class="w-full text-left border-collapse text-sm mb-2">`;
+                    html += `<thead><tr class="bg-indigo-50 text-indigo-800"><th class="p-2 border border-indigo-100">日期</th><th class="p-2 border border-indigo-100">班級</th><th class="p-2 border border-indigo-100">職務</th><th class="p-2 border border-indigo-100">單元名稱</th><th class="p-2 border border-indigo-100 text-center">節數</th></tr></thead><tbody>`;
+                    
+                    records.forEach(r => {
+                        totalPeriods += r.periods;
+                        const roleStyle = r.role === '主教' ? 'text-blue-700 font-bold' : 'text-green-700';
+                        html += `<tr>
+                            <td class="p-2 border border-gray-200 text-gray-700">${r.dayName}</td>
+                            <td class="p-2 border border-gray-200 text-gray-700">${r.className}</td>
+                            <td class="p-2 border border-gray-200 ${roleStyle}">${r.role}</td>
+                            <td class="p-2 border border-gray-200 text-gray-800 font-medium">${r.unit}</td>
+                            <td class="p-2 border border-gray-200 text-center font-bold text-gray-800">${r.periods}</td>
+                        </tr>`;
+                    });
+                    
+                    html += `<tr class="bg-gray-50 font-bold"><td colspan="4" class="p-2 border border-gray-200 text-right text-gray-800">總節數：</td><td class="p-2 border border-gray-200 text-center text-indigo-700 text-lg">${totalPeriods}</td></tr>`;
+                    html += `</tbody></table>`;
+                    
+                    // 列印專用簽名區 (網頁中隱藏)
+                    html += `<div class="payroll-signature hidden print:flex items-center gap-2 mt-8 text-gray-800 text-lg">
+                                <span class="font-bold">教師確認簽名：</span>
+                                <div class="border-b border-gray-500 w-64"></div>
+                             </div>`;
+                    
+                    html += `</div>`;
+                    container.innerHTML += html;
+                });
+            }
+            document.getElementById('payroll-modal').classList.remove('hidden');
+        }
+
+        function closePayrollModal() { document.getElementById('payroll-modal').classList.add('hidden'); }
+
+        function printPayroll() {
+            document.getElementById('print-payroll-container').innerHTML = `
+                <div class="text-center mb-6 print-page-break-avoid">
+                    <h1 class="text-2xl font-bold text-gray-800">💰 鐘點費印領清冊總表</h1>
+                    <p class="text-gray-500 mt-1">互動式排課系統匯出</p>
+                </div>
+                ${document.getElementById('payroll-container').innerHTML}
+            `;
+            document.body.classList.add('print-mode-payroll'); 
+            window.print(); 
+            document.body.classList.remove('print-mode-payroll');
+        }
+
 
         // ==========================================
         // 📑 7. 資料匯入與雲端序列化中樞
@@ -894,7 +1038,6 @@
         // ==========================================
         
         function serializeState() { 
-            // 【修復】使用深拷貝 (JSON.parse + JSON.stringify) 徹底切斷參照連結，防止洗除資料
             return { 
                 pool: JSON.parse(JSON.stringify(coursePool)), 
                 schedA: JSON.parse(JSON.stringify(scheduleA)), 
@@ -903,12 +1046,15 @@
         }
         
         function deserializeState(state) {
-            // 清除現有卡片
+            if (!document.getElementById('cell-A-0-0')) {
+                renderTable('A', 0); renderTable('A', 1);
+                renderTable('B', 0); renderTable('B', 1);
+            }
+
             document.querySelectorAll('td.droppable').forEach(td => td.innerHTML = '');
             for(let d=0;d<10;d++)for(let p=0;p<8;p++){ scheduleA[d][p]=null; scheduleB[d][p]=null; }
             coursePool = state.pool || {};
             
-            // 補齊顏色
             Object.values(coursePool).forEach(c => { if(!c.color) c.color = getNextColor(); });
 
             const loadSched = (src, dest, classId) => {
@@ -932,13 +1078,11 @@
             loadSched(state.schedA, scheduleA, 'A');
             loadSched(state.schedB, scheduleB, 'B');
             
-            // 必須在載入完課表後再渲染課程庫
             renderPool();
             checkAllConflicts();
             applyHighlights();
         }
 
-        // 🔥 將資料轉換成「純字串」安全避開 Firestore Nested Arrays 錯誤
         function saveToCloud() {
             if(!isAdmin) return;
             const rawState = serializeState();
@@ -962,7 +1106,6 @@
             }
         }
 
-        // 📥 Offline-First (離線優先/背景同步機制)
         function loadFromCloud() {
             if(db) {
                 db.collection("schedules").doc("master_data_v2").get()
@@ -974,7 +1117,6 @@
                         document.getElementById('role-badge').innerText = isAdmin ? "✍️ 管理員模式" : "👁️ 唯讀展示模式";
                         showToast("☁️ 已成功同步最新雲端資料", "success");
                     } else {
-                        // 嘗試舊版備份
                         db.collection("schedules").doc("master_data").get()
                         .then(oldDoc => {
                             if(oldDoc.exists) {
@@ -1018,16 +1160,12 @@
         // ==========================================
         // 🚀 9. 系統啟動 (超強防呆秒開機制)
         // ==========================================
-        // 1. 強制在腳本加載時立刻畫出所有表格，保證 100% 不會因為網路或擴充功能而遺失！
         renderTable('A', 0);
         renderTable('A', 1);
         renderTable('B', 0);
         renderTable('B', 1);
         
-        // 2. 瞬間載入本機資料，讓畫面第一秒就呈現
         loadFromLocal(true);
-
-        // 3. 在背景默默檢查權限與連線雲端
         checkPermissionsAndInitFirebase();
 
     </script>
