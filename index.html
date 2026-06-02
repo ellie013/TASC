@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>互動式拖曳排課系統 (專業安全版)</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase App & Firestore SDK (v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
@@ -75,10 +77,12 @@
 </head>
 <body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans text-gray-800" onclick="clearHighlightOnBackground(event)">
 
+    <!-- 列印專用隱藏容器 -->
     <div id="print-only-container" class="hidden"></div>
     <div id="print-payroll-container" class="hidden"></div>
     <div id="print-single-payroll-container" class="hidden"></div>
 
+    <!-- 頂部標題與控制列 -->
     <header class="flex justify-between items-center bg-white px-4 py-2 shadow-sm border-b border-gray-200 shrink-0 z-40 print:hidden">
         <div class="flex items-center gap-3">
             <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -92,7 +96,7 @@
             </div>
         </div>
         <div class="flex gap-2">
-            <button onclick="openPayrollModal()" class="admin-btn hidden px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded transition text-sm font-medium border border-indigo-200">
+            <button onclick="openPayrollModal()" class="admin-btn hidden px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded transition text-sm font-medium border border-indigo-200 shadow-sm">
                 💰 印領清冊
             </button>
             <button onclick="saveToCloud()" class="admin-btn hidden px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition text-sm font-medium border border-blue-200">
@@ -116,8 +120,10 @@
         </div>
     </header>
 
+    <!-- 主要內容區 -->
     <main class="flex-1 flex flex-row overflow-hidden p-2 gap-2 print:p-0 print:m-0">
         
+        <!-- 課表區 (80%) -->
         <div class="w-[80%] flex flex-col min-w-0 flex-shrink-0 print:w-full print:block">
             
             <div class="flex justify-center mb-2 shrink-0 print:hidden">
@@ -131,6 +137,7 @@
                 </div>
             </div>
 
+            <!-- 視圖 A (甲班) -->
             <div id="view-a" class="flex-1 flex flex-row gap-2 overflow-hidden">
                 <section class="flex-1 flex flex-col bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[300px]">
                     <div class="bg-blue-600 text-white py-1.5 font-bold text-center text-sm tracking-widest shrink-0">甲班 - 第一週</div>
@@ -142,6 +149,7 @@
                 </section>
             </div>
 
+            <!-- 視圖 B (乙班) -->
             <div id="view-b" class="hidden flex-1 flex flex-row gap-2 overflow-hidden">
                 <section class="flex-1 flex flex-col bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[300px]">
                     <div class="bg-green-600 text-white py-1.5 font-bold text-center text-sm tracking-widest shrink-0">乙班 - 第一週</div>
@@ -154,6 +162,7 @@
             </div>
         </div>
 
+        <!-- 右欄：待排課程庫 (20%) -->
         <aside id="sidebar-container" class="w-[20%] bg-white border border-gray-300 rounded shadow-sm flex flex-col shrink-0 min-w-[200px] print:hidden">
             <div class="bg-gray-700 text-white py-1.5 font-bold text-center text-sm flex justify-between items-center px-3 shrink-0">
                 <span id="pool-title">📚 甲班課程庫 (待排)</span>
@@ -171,10 +180,11 @@
         </aside>
     </main>
 
+    <!-- 💰 鐘點費印領清冊與 GAS 匯出 Modal -->
     <div id="payroll-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
         <div class="bg-white rounded-lg p-5 w-[980px] max-w-[98vw] h-[90vh] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
             <div class="flex justify-between items-center mb-2 border-b pb-2 shrink-0">
-                <h2 class="text-xl font-bold text-indigo-800 flex items-center gap-2">💰 鐘點費印領清冊與憑證黏存單產生器</h2>
+                <h2 class="text-xl font-bold text-indigo-800 flex items-center gap-2">💰 鐘點費印領清冊與 Google 簽呈對接</h2>
                 <button onclick="closePayrollModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
             </div>
             
@@ -201,11 +211,11 @@
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">主教單價 (元/節)</label>
-                    <input type="number" id="payroll-main-rate" class="w-full border border-gray-300 rounded p-1" value="800" oninput="updatePayrollUI()">
+                    <input type="number" id="payroll-main-rate" class="w-full border border-gray-300 rounded p-1" value="400" oninput="updatePayrollUI()">
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">助教單價 (元/節)</label>
-                    <input type="number" id="payroll-ta-rate" class="w-full border border-gray-300 rounded p-1" value="400" oninput="updatePayrollUI()">
+                    <input type="number" id="payroll-ta-rate" class="w-full border border-gray-300 rounded p-1" value="200" oninput="updatePayrollUI()">
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">用途摘要</label>
@@ -224,6 +234,13 @@
                 <div class="col-span-2">
                     <label class="block font-bold text-indigo-900 mb-1">講師戶籍地址</label>
                     <input type="text" id="payroll-teacher-address" class="w-full border border-indigo-200 bg-indigo-50/50 rounded p-1" placeholder="例如: 彰化縣芬園鄉..." oninput="saveTeacherInfo()">
+                </div>
+                
+                <!-- 🔗 Google Sheets GAS API 網址設定區 -->
+                <div class="col-span-4 bg-yellow-50 border border-yellow-200 rounded p-2 flex items-center gap-3">
+                    <span class="font-bold text-yellow-800 shrink-0">🔗 Google GAS API 網址：</span>
+                    <input type="text" id="gas-api-url" class="flex-1 border border-gray-300 rounded p-1 text-xs" placeholder="請貼上以 /exec 結尾的 GAS 網頁應用程式 URL" oninput="saveGasUrlToLocal()">
+                    <span class="text-[10px] text-gray-500">網址會自動儲存於此瀏覽器</span>
                 </div>
                 
                 <div class="flex items-center gap-4 col-span-4 pt-1 border-t border-indigo-100">
@@ -250,15 +267,23 @@
                 </div>
             </div>
             
-            <div class="flex justify-end gap-3 mt-3 pt-2 border-t shrink-0">
-                <button onclick="closePayrollModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded font-bold hover:bg-gray-300 transition-colors">關閉視窗</button>
-                <button id="btn-print-payroll" onclick="printActivePayroll()" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2 transition-colors">
-                    🖨️ 列印報表 (自動排版)
-                </button>
+            <div class="flex justify-between items-center mt-3 pt-2 border-t shrink-0">
+                <div class="flex gap-2">
+                    <button id="btn-export-gas" onclick="exportToGoogleSheets()" class="px-5 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-700 shadow-sm flex items-center gap-2 transition-colors">
+                        📤 匯出此人簽呈至 Google Sheets
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="closePayrollModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded font-bold hover:bg-gray-300 transition-colors">關閉視窗</button>
+                    <button id="btn-print-payroll" onclick="printActivePayroll()" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2 transition-colors">
+                        🖨️ 列印報表 (自動排版)
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 老師課表檢視 Modal -->
     <div id="teacher-schedule-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
         <div class="bg-white rounded-lg p-5 w-[900px] max-w-[95vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -277,6 +302,7 @@
         </div>
     </div>
 
+    <!-- 編輯課程庫預設資訊 Modal (管理員) -->
     <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-5 w-[380px] shadow-xl">
             <h2 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2">編輯課程預設資訊</h2>
@@ -308,6 +334,7 @@
         </div>
     </div>
 
+    <!-- 雙擊微調單堂師資 Modal -->
     <div id="edit-instance-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-5 w-[380px] shadow-xl">
             <h2 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2 flex justify-between items-center">
@@ -333,6 +360,7 @@
         </div>
     </div>
 
+    <!-- 匯入與確認彈窗 -->
     <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-6 w-[600px] shadow-xl">
             <h2 id="import-modal-title" class="text-lg font-bold mb-2 text-gray-800">從 Google Sheets 貼上資料</h2>
@@ -987,6 +1015,17 @@
             updatePayrollUI();
         }
 
+        function saveGasUrlToLocal() {
+            const gasUrl = document.getElementById('gas-api-url').value.trim();
+            localStorage.setItem('gas_api_url', gasUrl);
+        }
+
+        function loadGasUrlFromLocal() {
+            const gasUrl = localStorage.getItem('gas_api_url') || "";
+            const input = document.getElementById('gas-api-url');
+            if (input) input.value = gasUrl;
+        }
+
         function generatePayrollData() {
             const payroll = {}; 
             const classSelect = document.getElementById('payroll-class-select')?.value || 'A';
@@ -1044,14 +1083,16 @@
             if (data.main.periods > 0) {
                 let datesMain = formatDatesChinese(data.main.days);
                 const mainTotal = data.main.periods * mainRate;
-                mainExpl = `本校辦理「${projectName}」，聘請講師 <strong>${teacherName}</strong> 擔任<strong>主教老師</strong>，授課時間 <strong>${rYear}年${datesMain}</strong>，共計 <strong>${data.main.periods}</strong> 節，每節 ${mainRate} 元，共計新台幣 ${mainTotal} 元整。`;
+                const mUnitsText = Array.from(data.main.units).map(u => `【${u}】`).join('、');
+                mainExpl = `本校辦理「${projectName}」，聘請講師 <strong>${teacherName}</strong> 擔任<strong>主教老師</strong>，授課單元包含：${mUnitsText}。授課時間 <strong>${rYear}年${datesMain}</strong>，共計 <strong>${data.main.periods}</strong> 節，每節 ${mainRate} 元，共計新台幣 ${mainTotal} 元整。`;
             }
 
             let taExpl = "";
             if (data.ta.periods > 0) {
                 let datesTA = formatDatesChinese(data.ta.days);
                 const taTotal = data.ta.periods * taRate;
-                taExpl = `聘請講師 <strong>${teacherName}</strong> 擔任<strong>助教老師</strong>，授課時間 <strong>${rYear}年${datesTA}</strong>，共計 <strong>${data.ta.periods}</strong> 節，每節 ${taRate} 元，共計新台幣 ${taTotal} 元整。`;
+                const taUnitsText = Array.from(data.ta.units).map(u => `【${u}】`).join('、');
+                taExpl = `聘請講師 <strong>${teacherName}</strong> 擔任<strong>助教老師</strong>，授課單元包含：${taUnitsText}。授課時間 <strong>${rYear}年${datesTA}</strong>，共計 <strong>${data.ta.periods}</strong> 節，每節 ${taRate} 元，共計新台幣 ${taTotal} 元整。`;
             }
             
             let html = `<div class="mt-2 text-[11px] text-black leading-relaxed text-left font-sans print:mt-1">`;
@@ -1079,8 +1120,8 @@
             const projectName = document.getElementById('payroll-project-name').value;
             const classNote = document.getElementById('payroll-class-note').value;
             const rYear = document.getElementById('payroll-year').value;
-            const mainRate = parseInt(document.getElementById('payroll-main-rate').value) || 800;
-            const taRate = parseInt(document.getElementById('payroll-ta-rate').value) || 400;
+            const mainRate = parseInt(document.getElementById('payroll-main-rate').value) || 400;
+            const taRate = parseInt(document.getElementById('payroll-ta-rate').value) || 200;
             const abstract = document.getElementById('payroll-abstract').value;
             const isInternal = document.getElementById('payroll-is-internal').checked;
             const isUnion = document.getElementById('payroll-is-union').checked;
@@ -1102,14 +1143,14 @@
                     totalPeriods += data.main.periods;
                     baseAmount += data.main.periods * mainRate;
                     let datesMain = formatDatesChinese(data.main.days);
-                    dateDescriptions.push(`${rYear}年${datesMain}，每日4堂課，共計 ${data.main.periods} 堂課(主教老師)`);
+                    dateDescriptions.push(`${rYear}年${datesMain}，每日課堂，共計 ${data.main.periods} 堂課(主教老師)`);
                 }
                 
                 if (data.ta.periods > 0) {
                     totalPeriods += data.ta.periods;
                     baseAmount += data.ta.periods * taRate;
                     let datesTA = formatDatesChinese(data.ta.days);
-                    dateDescriptions.push(`${rYear}年${datesTA}，每日4堂課，共計 ${data.ta.periods} 堂課(助教老師)`);
+                    dateDescriptions.push(`${rYear}年${datesTA}，每日課堂，共計 ${data.ta.periods} 堂課(助教老師)`);
                 }
 
                 const employerNHI = Math.round(baseAmount * 0.0211); 
@@ -1123,6 +1164,7 @@
                 const totalRows = (hasMain ? 2 : 0) + (hasTa ? 2 : 0);
 
                 let singleHtml = `
+                    <!-- 憑證黏存單外觀 -->
                     <div class="bg-white p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm print:p-2 border border-gray-300">
                         <div class="text-center font-bold text-lg mb-2 tracking-widest">彰化縣芬園鄉同安國民小學</div>
                         <div class="flex justify-between items-end mb-2">
@@ -1140,6 +1182,7 @@
                             </div>
                         </div>
                         
+                        <!-- 黏存單表格 -->
                         <table class="w-full border-collapse border border-black text-xs text-center mb-6 print:mb-4">
                             <tbody>
                                 <tr class="h-10">
@@ -1161,6 +1204,7 @@
                             </tbody>
                         </table>
 
+                        <!-- 核章簽署格 -->
                         <div class="grid grid-cols-5 border border-black text-center text-xs divide-x divide-black h-16">
                             <div class="flex flex-col justify-between p-1">
                                 <div class="font-bold bg-gray-50 border-b border-black pb-0.5">經辦單位</div>
@@ -1185,20 +1229,24 @@
                         </div>
                     </div>
 
+                    <!-- ✂️ 憑證粘貼裁切線 -->
                     <div class="flex items-center justify-center text-xs text-gray-500 font-mono tracking-widest my-4 select-none max-w-[850px] mx-auto border-t border-dashed border-gray-400 pt-2 print:my-2">
                         ✂️----------------憑--------證--------黏--------貼--------線----------------✂️
                     </div>
 
+                    <!-- 講師鐘點費印領清冊 -->
                     <div class="bg-white p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm print:p-2 border border-gray-300">
                         <div class="text-center font-bold text-base mb-1">彰化縣芬園鄉同安國民小學</div>
                         <div class="text-center font-bold text-lg mb-4 tracking-wider">講師鐘點費印領清冊</div>
                         
+                        <!-- 說明詳細欄位 -->
                         <div class="text-left text-xs font-bold mb-2 space-y-1">
                             <div class="flex"><div class="w-24 shrink-0">授課日期時間：</div><div class="font-normal text-gray-800">${dateDescriptions.join('；')}</div></div>
                             <div class="flex"><div class="w-24 shrink-0">授課題目：</div><div class="font-normal text-gray-800">上課時數，詳如教師簽到表。</div></div>
                             <div class="flex"><div class="w-24 shrink-0">服務單位：</div><div class="font-normal text-gray-800">同安國小</div></div>
                         </div>
 
+                        <!-- 專業清冊表格 -->
                         <table class="w-full border-collapse border border-black text-xs text-center mb-2">
                             <thead>
                                 <tr class="font-bold border border-black text-center bg-gray-100">
@@ -1367,6 +1415,7 @@
         function openPayrollModal() {
             if(!isAdmin) return;
             onPayrollClassChange(); 
+            loadGasUrlFromLocal();
             document.getElementById('payroll-modal').classList.remove('hidden');
         }
 
@@ -1384,11 +1433,13 @@
                 btnSummary.className = "py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600";
                 divSingle.classList.remove('hidden');
                 divSummary.classList.add('hidden');
+                document.getElementById('btn-export-gas').classList.remove('hidden');
             } else {
                 btnSummary.className = "py-2 px-6 font-bold border-b-2 border-indigo-600 text-indigo-700";
                 btnSingle.className = "py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600";
                 divSummary.classList.remove('hidden');
                 divSingle.classList.add('hidden');
+                document.getElementById('btn-export-gas').classList.add('hidden');
             }
             updatePayrollUI();
         }
@@ -1414,6 +1465,89 @@
                 window.print();
                 document.body.classList.remove('print-mode-payroll');
             }
+        }
+
+        // ==========================================
+        // 📤 一鍵呼叫 GAS 發送與對接 Google Sheets 的核心引擎
+        // ==========================================
+        function exportToGoogleSheets() {
+            const gasUrl = document.getElementById('gas-api-url').value.trim();
+            if (!gasUrl) {
+                showToast("⚠️ 請先在黃色區塊輸入您的 Google Apps Script API 網址！", "warning");
+                return;
+            }
+
+            const teacher = document.getElementById('payroll-teacher-select')?.value;
+            const payrollData = generatePayrollData();
+            if (!teacher || !payrollData[teacher]) {
+                showToast("⚠️ 目前查無此老師的排課時數，無法匯出！", "warning");
+                return;
+            }
+
+            const data = payrollData[teacher];
+            const projectName = document.getElementById('payroll-project-name').value;
+            const classNote = document.getElementById('payroll-class-note').value;
+            const rYear = document.getElementById('payroll-year').value;
+            const abstract = document.getElementById('payroll-abstract').value;
+            const isInternal = document.getElementById('payroll-is-internal').checked;
+            const isUnion = document.getElementById('payroll-is-union').checked;
+
+            // 格式化日期與單元
+            const mainDatesChinese = formatDatesChinese(data.main.days);
+            const taDatesChinese = formatDatesChinese(data.ta.days);
+
+            // ✨ 【最新修正】動態組合出格式完美的「授課日期與時間」字串（用於寫入 C14:M14）
+            let dateDescriptions = [];
+            if (data.main.periods > 0) {
+                dateDescriptions.push(`${rYear}年${mainDatesChinese}(主教)`);
+            }
+            if (data.ta.periods > 0) {
+                dateDescriptions.push(`${rYear}年${taDatesChinese}(助教)`);
+            }
+            const dateTimeStr = dateDescriptions.join('；');
+
+            // 封裝 JSON 包發送給 Google GAS
+            const payload = {
+                teacherName: teacher,
+                projectName: projectName,
+                classNote: classNote,
+                year: rYear,
+                abstract: abstract,
+                mainPeriods: data.main.periods,
+                taPeriods: data.ta.periods,
+                mainUnits: Array.from(data.main.units),
+                taUnits: Array.from(data.ta.units),
+                mainDatesChinese: mainDatesChinese,
+                taDatesChinese: taDatesChinese,
+                dateTimeStr: dateTimeStr, // ⚡ 傳遞 C14 資料
+                isInternal: isInternal,
+                isUnion: isUnion
+            };
+
+            const btn = document.getElementById('btn-export-gas');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⏳ 正在建立並寫入試算表...";
+            btn.disabled = true;
+
+            showToast("📡 正在向 Google 傳送資料...", "info");
+
+            // 使用 Fetch API 發送 POST
+            fetch(gasUrl, {
+                method: 'POST',
+                mode: 'no-cors', 
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                showToast("🎉 匯出請求已送出！請至 Google Sheets 檢查新建立的分頁！", "success");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            })
+            .catch(err => {
+                console.error("GAS 匯出錯誤:", err);
+                showToast("❌ 發送失敗，請確認 API 網址是否填寫正確，或是否允許權限！", "error");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
         }
 
         // ==========================================
@@ -1499,7 +1633,7 @@
         }
 
         // ==========================================
-        // 💾 10. 【安全升級】雲端資料庫編碼與儲存核心
+        // 💾 10. 雲端資料庫編碼與儲存核心
         // ==========================================
         function serializeState() { 
             return { 
