@@ -93,6 +93,12 @@
                 <span class="text-gray-600 font-bold">📅 第一週(一) 起始日期:</span>
                 <input type="date" id="schedule-start-date" class="border border-gray-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="2025-07-07" onchange="updateScheduleDates(); saveToCloud();">
             </div>
+
+            <!-- ✨ 升級功能：停課日排除器 -->
+            <div class="admin-btn hidden flex items-center gap-1.5 text-xs bg-red-50 border border-red-200 p-1.5 rounded shadow-inner" title="在此輸入停課日期，結算時將自動扣除鐘點費。例如: 7/8, 7/15">
+                <span class="text-red-700 font-bold">☔ 停課日扣除 (不計薪):</span>
+                <input type="text" id="suspend-dates-input" class="border border-red-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-red-500 text-center w-[120px]" placeholder="如: 7/8, 7/15" onchange="updatePayrollUI(); saveToCloud();">
+            </div>
         </div>
         <div class="flex gap-2">
             <button onclick="openPayrollModal()" class="admin-btn hidden px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded transition text-sm font-medium border border-indigo-200">
@@ -384,13 +390,13 @@
         const ADMIN_PASSWORD = "123"; 
 
         // ⚠️⚠️⚠️ 請在這裡貼上您的 Firebase 金鑰 ⚠️⚠️⚠️
-          const firebaseConfig = {
-      apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
-      authDomain: "tasc-schedule.firebaseapp.com",
-      projectId: "tasc-schedule",
-      storageBucket: "tasc-schedule.firebasestorage.app",
-      messagingSenderId: "829044730170",
-      appId: "1:829044730170:web:0d5c864d9b90340d200803"
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
         };
 
         let db = null;
@@ -602,6 +608,9 @@
             renderPool();
         }
 
+        // ==========================================
+        // 🧑‍🏫 5. 師資解析與高亮/反白邏輯
+        // ==========================================
         function isTeacherMissing(course) { return !course.mainTeacher || course.mainTeacher === '未指定' || course.mainTeacher.trim() === ''; }
 
         function getTeachersListForCourseId(courseId) {
@@ -673,6 +682,9 @@
             scanHighlight(scheduleA, 'A'); scanHighlight(scheduleB, 'B');
         }
 
+        // ==========================================
+        // ⚡ 6. 衝堂偵測機制
+        // ==========================================
         function getConflictingTeachers(instA, instB) {
             if (!instA || !instB) return [];
             const tA = getTeachersListForInstance(instA);
@@ -717,6 +729,9 @@
             }
         }
 
+        // ==========================================
+        // 🔄 7. 拖曳控制邏輯 (管理員限定)
+        // ==========================================
         function dragStart(ev, type, id) {
             if (!isAdmin) return;
             const payload = { type: type };
@@ -945,8 +960,16 @@
         }
 
         // ==========================================
-        // 💰 9.2 印領清冊與對接 Google Sheets
+        // 💰 9.2 印領清冊與對接 Google Sheets (含停課日過濾)
         // ==========================================
+        
+        // 輔助函數：取得停課日陣列
+        function getSuspendedDatesArray() {
+            const input = document.getElementById('suspend-dates-input');
+            if (!input) return [];
+            return input.value.split(',').map(d => d.trim()).filter(d => d !== '');
+        }
+
         function onPayrollClassChange() {
             const classSelect = document.getElementById('payroll-class-select').value;
             document.getElementById('payroll-class-note').value = classSelect === 'A' ? '甲班' : '乙班';
@@ -957,7 +980,7 @@
             const payrollData = generatePayrollData(); 
             const teachers = Object.keys(payrollData).sort();
             if(teachers.length === 0) {
-                select.innerHTML = '<option value="">-- 此班別目前無講師排課紀錄 --</option>';
+                select.innerHTML = '<option value="">-- 此班別目前無有效排課紀錄 --</option>';
                 document.getElementById('payroll-teacher-id').value = "";
                 document.getElementById('payroll-teacher-address').value = "";
             } else {
@@ -998,10 +1021,16 @@
         function generatePayrollData() {
             const payroll = {}; 
             const classSelect = document.getElementById('payroll-class-select')?.value || 'A';
+            const suspendedDates = getSuspendedDatesArray();
 
             const addRecord = (teacher, classId, dayIndex, role, unit) => {
                 if (classId !== classSelect) return; 
                 if (!teacher || teacher === '未指定' || teacher.trim() === '') return;
+                
+                // ✨ 升級邏輯：如果這天在停課名單中，直接跳過不計算！
+                const dateStr = getScheduleDate(dayIndex);
+                if (suspendedDates.includes(dateStr)) return;
+
                 teacher = teacher.trim();
                 if (!payroll[teacher]) {
                     payroll[teacher] = {
@@ -1081,7 +1110,7 @@
             return html;
         }
 
-        // 核心渲染邏輯 (對齊 Excel 範本格式，主教 400 元 / 助教 200 元標準)
+        // 核心渲染邏輯
         function updatePayrollUI() {
             const payrollData = generatePayrollData();
             const teacher = document.getElementById('payroll-teacher-select')?.value;
@@ -1096,7 +1125,7 @@
 
             const singleContainer = document.getElementById('payroll-single-preview');
             if (!teacher || !payrollData[teacher]) {
-                singleContainer.innerHTML = `<div class="text-center py-10 text-gray-500 font-bold">目前此班別、此講師尚無排課紀錄。</div>`;
+                singleContainer.innerHTML = `<div class="text-center py-10 text-gray-500 font-bold">目前此班別、此講師尚無有效排課紀錄。<br><span class="text-xs text-gray-400">(若遇停課日排除，時數可能歸零)</span></div>`;
             } else {
                 const data = payrollData[teacher];
                 const meta = teacherMetadata[teacher] || { id: "", address: "" };
@@ -1132,7 +1161,6 @@
                 const totalRows = (hasMain ? 2 : 0) + (hasTa ? 2 : 0);
 
                 let singleHtml = `
-                    <!-- 憑證黏存單外觀 (黑白公文格線，去除灰底) -->
                     <div class="bg-white p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm print:p-2 border border-gray-300">
                         <div class="text-center font-bold text-lg mb-2 tracking-widest">彰化縣芬園鄉同安國民小學</div>
                         <div class="flex justify-between items-end mb-2">
@@ -1150,7 +1178,6 @@
                             </div>
                         </div>
                         
-                        <!-- 黏存單表格 -->
                         <table class="w-full border-collapse border border-black text-xs text-center mb-6 print:mb-4">
                             <tbody>
                                 <tr class="h-10">
@@ -1172,7 +1199,6 @@
                             </tbody>
                         </table>
 
-                        <!-- 核章格 -->
                         <div class="grid grid-cols-5 border border-black text-center text-xs divide-x divide-black h-16">
                             <div class="flex flex-col justify-between p-1"><div class="font-bold bg-gray-50 border-b border-black pb-0.5">經辦單位</div><div class="text-gray-400 text-[10px]">簽章</div></div>
                             <div class="flex flex-col justify-between p-1"><div class="font-bold bg-gray-50 border-b border-black pb-0.5">驗收或證明</div><div class="text-gray-400 text-[10px]">簽章</div></div>
@@ -1182,12 +1208,10 @@
                         </div>
                     </div>
 
-                    <!-- ✂️ 憑證粘貼裁切線 -->
                     <div class="flex items-center justify-center text-xs text-gray-500 font-mono tracking-widest my-4 select-none max-w-[850px] mx-auto border-t border-dashed border-gray-400 pt-2 print:my-2">
                         ✂️----------------憑--------證--------黏--------貼--------線----------------✂️
                     </div>
 
-                    <!-- 講師鐘點費印領清冊 -->
                     <div class="bg-white p-6 shadow-sm max-w-[850px] mx-auto text-black font-sans leading-relaxed text-sm print:p-2 border border-gray-300">
                         <div class="text-center font-bold text-base mb-1">彰化縣芬園鄉同安國民小學</div>
                         <div class="text-center font-bold text-lg mb-4 tracking-wider">講師鐘點費印領清冊</div>
@@ -1198,7 +1222,6 @@
                             <div class="flex"><div class="w-24 shrink-0">服務單位：</div><div class="font-normal text-gray-800">同安國小</div></div>
                         </div>
 
-                        <!-- 專業清冊表格 -->
                         <table class="w-full border-collapse border border-black text-xs text-center mb-2">
                             <thead>
                                 <tr class="font-bold border border-black text-center bg-gray-100">
@@ -1264,7 +1287,6 @@
                     `;
                 }
 
-                // ✨ 網頁前端印領清冊合計行渲染對齊優化
                 singleHtml += `
                                 <tr class="font-bold text-xs bg-gray-100">
                                     <td class="border border-black p-2 text-center" colspan="2">合&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;計</td>
@@ -1445,14 +1467,17 @@
             const isInternal = document.getElementById('payroll-is-internal').checked;
             const isUnion = document.getElementById('payroll-is-union').checked;
             const startDate = document.getElementById('schedule-start-date').value;
+            const suspendedDates = getSuspendedDatesArray();
 
-            // 彙整上課日期天數與單元名稱
             let activeDaysList = [];
             let unitNamesList = [];
             
-            // 掃描獲取該老師上的所有課程名稱與天數
+            // 掃描課程，並自動過濾掉停課日
             const scanClass = (sched, classId) => {
                 for (let d = 0; d < 10; d++) {
+                    const dateStr = getScheduleDate(d);
+                    if (suspendedDates.includes(dateStr)) continue; // ☔ 停課日攔截！
+
                     for (let p = 0; p < 8; p++) {
                         const inst = sched[d][p];
                         if (inst && coursePool[inst.courseId]) {
@@ -1469,11 +1494,9 @@
             scanClass(scheduleA, 'A');
             scanClass(scheduleB, 'B');
 
-            // 去除重複值
             const uniqueDays = Array.from(new Set(activeDaysList));
             const uniqueUnits = Array.from(new Set(unitNamesList));
 
-            // C14:M14 授課日期與時間動態組合 (結合 主教、助教)
             let dateStrList = [];
             if (data.main.periods > 0) {
                 dateStrList.push(formatDatesChinese(data.main.days) + "(主教)");
@@ -1483,7 +1506,6 @@
             }
             const dateTimeStr = rYear + "年" + dateStrList.join("；") + "，每日4堂課。";
 
-            // 包裝發送 JSON Payload
             const payload = {
                 teacherName: teacher,
                 projectName: projectName,
@@ -1506,34 +1528,24 @@
             btn.innerText = "⏳ 正在同步發送中...";
             btn.disabled = true;
 
-            // 使用 POST 發送至 GAS Web App (不經過 iFrame)
             fetch(gasUrl, {
                 method: 'POST',
-                mode: 'cors',
+                mode: 'no-cors',
                 headers: {
-                    'Content-Type': 'text/plain'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
-            .then(resData => {
+            .then(() => {
                 btn.innerText = "📤 匯出此人簽呈至 Google Sheets";
                 btn.disabled = false;
-                if (resData.status === "success") {
-                    showToast("🎉 成功匯出至 Google Sheets 試算表！", "success");
-                    // 彈出式提醒用戶，並附帶產生的試算表網址連結
-                    if (confirm("已在 Google Sheets 中成功複製並產生簽呈分頁！\n是否立刻開啟您的 Google 試算表檢視？")) {
-                        window.open(resData.sheetUrl, '_blank');
-                    }
-                } else {
-                    alert("❌ 匯出失敗，錯誤訊息：\n" + resData.message);
-                }
+                showToast("🎉 匯出指令已送出！請至 Google Sheets 檢查分頁！", "success");
             })
             .catch(err => {
                 btn.innerText = "📤 匯出此人簽呈至 Google Sheets";
                 btn.disabled = false;
                 console.error(err);
-                alert("❌ 連線至 Google API 失敗，請確認：\n1. GAS 網址是否正確\n2. 部署時是否選擇「所有人」");
+                alert("❌ 連線至 Google API 失敗，請確認網址是否正確。");
             });
         }
 
@@ -1629,7 +1641,8 @@
                 schedB: JSON.parse(JSON.stringify(scheduleB)),
                 teacherMetadata: JSON.parse(JSON.stringify(teacherMetadata)), 
                 startDate: document.getElementById('schedule-start-date')?.value || "2025-07-07",
-                googleGasUrl: document.getElementById('payroll-gas-url')?.value || "" 
+                googleGasUrl: document.getElementById('payroll-gas-url')?.value || "",
+                suspendedDates: document.getElementById('suspend-dates-input')?.value || ""
             }; 
         }
         
@@ -1651,6 +1664,10 @@
             if (state.googleGasUrl) {
                 const gasInput = document.getElementById('payroll-gas-url');
                 if (gasInput) gasInput.value = state.googleGasUrl;
+            }
+            if (state.suspendedDates) {
+                const suspendInput = document.getElementById('suspend-dates-input');
+                if (suspendInput) suspendInput.value = state.suspendedDates;
             }
             updateScheduleDates(); 
 
