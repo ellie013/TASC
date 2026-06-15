@@ -38,7 +38,7 @@
 
         /* 列印最佳化設定 */
         @media print {
-            @page { size: portrait; margin: 0.8cm; }
+            @page { margin: 0.6cm; } /* 移除 size: portrait，改由使用者或內容自動推薦橫直向 */
             body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
             
             body:not(.print-mode-teacher):not(.print-mode-payroll):not(.print-mode-single-payroll):not(.print-mode-signin):not(.print-mode-student) #print-only-container { display: none !important; }
@@ -56,7 +56,7 @@
             body.print-mode-signin #print-signin-container { display: block !important; width: 100%; }
 
             body.print-mode-student > *:not(#print-student-container) { display: none !important; }
-            body.print-mode-student #print-student-container { display: block !important; width: 100%; }
+            body.print-mode-student #print-student-container { display: block !important; width: 100% !important; max-width: 100% !important; }
 
             .print-page-break { page-break-before: always; }
             .payroll-box { page-break-inside: avoid; border: 1px solid #000; margin-bottom: 20px; padding: 15px; border-radius: 8px; }
@@ -228,9 +228,9 @@
     </div>
 
     <div id="student-attendance-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
-        <div class="bg-white rounded-lg p-5 w-[1100px] max-w-[98vw] h-[88vh] max-h-[92vh] flex flex-col shadow-2xl">
+        <div class="bg-white rounded-lg p-5 w-[1200px] max-w-[98vw] h-[88vh] max-h-[92vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-3 border-b pb-2 shrink-0">
-                <h2 class="text-xl font-bold text-sky-800 flex items-center gap-2">👥 學生名單與簽到點名簿產生器</h2>
+                <h2 class="text-xl font-bold text-sky-800 flex items-center gap-2">👥 學生名單與逐節點名簿產生器</h2>
                 <button onclick="closeStudentAttendanceModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
             </div>
             <div class="grid grid-cols-4 gap-4 flex-1 overflow-hidden">
@@ -244,7 +244,7 @@
                     
                     <div class="flex-1 flex flex-col min-h-0">
                         <label class="block text-xs font-bold text-sky-700 mb-1">
-                            📋 學生姓名名冊 (一人一行，自動排序)：
+                            📋 學生姓名名冊 (一人一行)：
                         </label>
                         <textarea id="student-names-textarea" class="w-full flex-1 border border-gray-300 rounded p-2 text-sm outline-none focus:ring-2 focus:ring-sky-500 resize-none font-mono placeholder-gray-400 whitespace-pre" placeholder="張小明&#13;&#10;林阿花&#13;&#10;王大槌"></textarea>
                     </div>
@@ -256,12 +256,16 @@
                 
                 <!-- 右側：點名表預覽區 -->
                 <div class="col-span-3 flex flex-col h-full min-h-0">
-                    <div class="flex justify-between items-center mb-2 shrink-0">
-                        <span class="text-xs text-amber-800 font-bold bg-amber-50 px-2 py-1 rounded border border-amber-200">
-                            💡 點名表表頭日期會依照首頁「第一週(一)起始日期」自動算出，印出免手寫！
-                        </span>
+                    <div class="flex flex-wrap justify-between items-center mb-2 gap-2 shrink-0">
+                        <div class="flex items-center gap-2 text-sm font-bold">
+                            <span class="text-gray-700">選擇點名日期：</span>
+                            <select id="student-attendance-day-select" class="border border-gray-300 rounded p-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-sky-500" onchange="renderStudentAttendancePreview()">
+                                <!-- 由 JS 動態生成 10 天選項 -->
+                            </select>
+                            <span class="text-xs text-red-600 font-normal">💡 列印時，請於設定中將版面設為「橫向」並選擇 B4/A3/A4 即可完美塞滿單張紙！</span>
+                        </div>
                         <button onclick="printStudentAttendance()" class="px-5 py-1.5 bg-sky-600 text-white rounded text-sm font-bold hover:bg-sky-700 shadow-sm flex items-center gap-1.5 transition-colors">
-                            🖨️ 列印十日點名表 (A4直式自動排版)
+                            🖨️ 列印此單日 8 節點名表
                         </button>
                     </div>
                     <div id="student-preview-container" class="flex-1 overflow-auto bg-gray-50 border border-gray-200 rounded p-4 no-scrollbar">
@@ -620,6 +624,7 @@
             }
             // 同步更新點名預覽與簽到表預覽日期
             if (document.getElementById('student-attendance-modal') && !document.getElementById('student-attendance-modal').classList.contains('hidden')) {
+                populateAttendanceDaySelect();
                 renderStudentAttendancePreview();
             }
             if (document.getElementById('teacher-signin-modal') && !document.getElementById('teacher-signin-modal').classList.contains('hidden')) {
@@ -1710,6 +1715,7 @@
         }
 
         function openStudentAttendanceModal() {
+            populateAttendanceDaySelect();
             onStudentModalClassChange();
             document.getElementById('student-attendance-modal').classList.remove('hidden');
         }
@@ -1718,57 +1724,103 @@
             document.getElementById('student-attendance-modal').classList.add('hidden');
         }
 
-        // 渲染 A4 自動排版雙週點名表預覽
+        // 動態生成 10 天的下拉選單選項
+        function populateAttendanceDaySelect() {
+            const select = document.getElementById('student-attendance-day-select');
+            if (!select) return;
+            select.innerHTML = '';
+            for (let d = 0; d < 10; d++) {
+                const dateStr = getScheduleDate(d);
+                const dayName = days[d];
+                const weekNum = d < 5 ? "第一週" : "第二週";
+                select.innerHTML += `<option value="${d}">${weekNum} - ${dayName} (${dateStr})</option>`;
+            }
+        }
+
+        // 渲染 A4/B4/A3 橫式自動排版「單日 8 節課完整點名表」
         function renderStudentAttendancePreview() {
             const selClass = document.getElementById('student-modal-class-select').value;
             const list = selClass === 'A' ? studentsA : studentsB;
             const container = document.getElementById('student-preview-container');
+            const d = parseInt(document.getElementById('student-attendance-day-select').value) || 0;
             
-            // 表頭日期動態生成
-            let dateHeadersHtml = '';
-            for (let d = 0; d < 10; d++) {
-                const parts = days[d].replace('星期', ''); // 只保留一、二、三...
-                dateHeadersHtml += `<th class="border border-gray-400 p-1 w-12 text-center font-bold bg-gray-50 text-[10px] min-w-[40px]">
-                    <div>${getScheduleDate(d)}</div>
-                    <div>(${parts})</div>
-                </th>`;
+            const sched = selClass === 'A' ? scheduleA : scheduleB;
+            
+            // 固定生成 1 到 8 節課的欄位
+            let activePeriods = [];
+            for (let p = 0; p < 8; p++) {
+                const inst = sched[d][p];
+                if (inst) {
+                    const course = coursePool[inst.courseId];
+                    activePeriods.push({
+                        hasCourse: true,
+                        periodIndex: p,
+                        unit: course ? course.unit : "課堂單元",
+                        mainTeacher: inst.mainTeacher || "未指定",
+                        tas: inst.tas || ""
+                    });
+                } else {
+                    activePeriods.push({
+                        hasCourse: false,
+                        periodIndex: p,
+                        unit: "無安排課程",
+                        mainTeacher: "-",
+                        tas: ""
+                    });
+                }
             }
+
+            // 表頭日期與逐節課程/師資動態生成 (固定 8 節欄寬)
+            let dateHeadersHtml = '';
+            activePeriods.forEach(ap => {
+                const taText = ap.tas ? `<br><span class="text-[8px] font-normal text-emerald-700 leading-none">助:${ap.tas}</span>` : '';
+                dateHeadersHtml += `
+                    <th class="border border-black p-1 text-center bg-gray-50 text-[9px] w-[10%] min-w-[70px] leading-tight font-sans">
+                        <div class="font-bold text-gray-800">第 ${ap.periodIndex + 1} 節</div>
+                        <div class="text-blue-800 font-bold truncate max-w-[85px] my-0.5" title="${ap.unit}">${ap.unit}</div>
+                        <div class="text-[8px] text-gray-500 font-normal leading-none">
+                            <span class="text-blue-700">主:${ap.mainTeacher}</span>${taText}
+                        </div>
+                    </th>`;
+            });
 
             let rowsHtml = '';
             const displayList = list.length > 0 ? list : Array(15).fill(""); // 如果名單為空，預設提供 15 行空白行供手寫
 
             displayList.forEach((name, idx) => {
                 let cells = '';
-                for (let d = 0; d < 10; d++) {
-                    cells += `<td class="border border-gray-400 p-1.5 h-10"></td>`;
-                }
+                activePeriods.forEach((ap) => {
+                    // 如果該節無課，格子反灰但仍保留簽到格，或者保持空白
+                    const bgClass = ap.hasCourse ? "bg-white" : "bg-gray-100/50";
+                    cells += `<td class="border border-black p-1 h-8 ${bgClass}"></td>`;
+                });
                 rowsHtml += `
                     <tr class="hover:bg-gray-50">
-                        <td class="border border-gray-400 p-1 text-center font-mono text-xs">${idx + 1}</td>
-                        <td class="border border-gray-400 p-1 text-center font-bold text-sm tracking-wide text-gray-800">${name}</td>
+                        <td class="border border-black p-1 text-center font-mono text-[10px] h-8">${name ? idx + 1 : ''}</td>
+                        <td class="border border-black p-1 text-center font-bold text-xs tracking-wide text-gray-800 h-8">${name}</td>
                         ${cells}
-                        <td class="border border-gray-400 p-1"></td>
+                        <td class="border border-black p-1 h-8"></td>
                     </tr>
                 `;
             });
 
             const tableHtml = `
-                <div class="bg-white p-6 rounded shadow-sm max-w-[950px] mx-auto border border-gray-300 text-black font-sans leading-relaxed text-sm">
-                    <div class="text-center font-bold text-base mb-1">彰化縣芬園鄉同安國民小學</div>
-                    <div class="text-center font-bold text-lg mb-3 tracking-wider">夏日樂學 學生簽到點名簿 (${selClass === 'A' ? '甲班' : '乙班'})</div>
+                <div class="bg-white p-4 rounded shadow-sm w-full mx-auto border border-gray-300 text-black font-sans leading-none text-[11px] print:p-0 print:border-0" style="width: 100%; max-width: 100%;">
+                    <div class="text-center font-bold text-sm mb-0.5">彰化縣芬園鄉同安國民小學</div>
+                    <div class="text-center font-bold text-base mb-2 tracking-wider">夏日樂學 學生簽到點名簿 (${selClass === 'A' ? '甲班' : '乙班'})</div>
                     
-                    <div class="flex justify-between items-center text-xs font-bold text-gray-600 mb-2">
-                        <div>統計區間：雙週課程點名合訂</div>
-                        <div>預留簽到空間，可做為每日點名紀錄。</div>
+                    <div class="flex justify-between items-center text-[10px] font-bold text-gray-600 mb-1">
+                        <div>統計日期：${getScheduleDate(d)} (${days[d]})</div>
+                        <div>列印設定提示：請將印表機版面設定為「橫向 (Landscape)」，紙張選擇 B4 / A3 / A4。</div>
                     </div>
 
-                    <table class="w-full border-collapse border border-gray-400 text-xs text-center mb-3">
+                    <table class="w-full border-collapse border border-black text-center mb-2" style="table-layout: fixed; width: 100%;">
                         <thead>
-                            <tr class="bg-gray-100 font-bold border border-gray-400">
-                                <th class="border border-gray-400 p-1.5 w-10 text-center">座號</th>
-                                <th class="border border-gray-400 p-1.5 w-24 text-center">學生姓名</th>
+                            <tr class="bg-gray-100 font-bold border border-black">
+                                <th class="border border-black p-1 text-center w-[4%] text-[10px]">座號</th>
+                                <th class="border border-black p-1 text-center w-[10%] text-[10px]">學生姓名</th>
                                 ${dateHeadersHtml}
-                                <th class="border border-gray-400 p-1.5 w-16 text-center">備註</th>
+                                <th class="border border-black p-1 text-center w-[6%] text-[10px]">備註</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1776,8 +1828,8 @@
                         </tbody>
                     </table>
 
-                    <div class="flex justify-between items-center text-[11px] text-gray-500 mt-4 border-t pt-2 border-dashed border-gray-300">
-                        <div>經辦導師/帶班助教：_________________ (蓋章)</div>
+                    <div class="flex justify-between items-center text-[10px] text-gray-500 mt-2 border-t pt-1 border-dashed border-gray-300">
+                        <div>經辦導師/帶班助教：_________________ (簽章)</div>
                         <div>承辦人簽章：_________________</div>
                         <div>校長：_________________</div>
                     </div>
