@@ -182,6 +182,27 @@
         </aside>
     </main>
 
+    <!-- 🧑‍🏫 教師專屬課表 Modal -->
+    <div id="teacher-schedule-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
+        <div class="bg-white rounded-lg p-5 w-[900px] max-w-[95vw] h-[85vh] max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">🧑‍🏫 教師專屬課表檢視</h2>
+                <button onclick="closeTeacherScheduleModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
+            </div>
+            <div class="flex gap-3 mb-4 shrink-0">
+                <select id="teacher-select" class="border border-gray-300 rounded p-2 flex-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500" onchange="renderTeacherSchedule()">
+                    <!-- 選項由 JS 動態生成 -->
+                </select>
+                <button onclick="printTeacherSchedule()" class="px-5 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-sm flex items-center gap-2 transition-colors">
+                    🖨️ 列印此老師課表
+                </button>
+            </div>
+            <div id="teacher-schedule-container" class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar">
+                <!-- 老師課表由 JS 產生 -->
+            </div>
+        </div>
+    </div>
+
     <!-- ✨ 鐘點費印領清冊 Modal -->
     <div id="payroll-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
         <div class="bg-white rounded-lg p-5 w-[980px] max-w-[98vw] h-[90vh] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
