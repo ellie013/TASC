@@ -623,7 +623,7 @@
             for (let p = 0; p < 8; p++) {
                 html += `<tr><td class="sticky left-0 z-10 bg-gray-100 border border-gray-300 p-1 text-center font-bold text-gray-600 text-xs sticky-col-shadow">第 ${p+1} 節</td>`;
                 for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
-                    html += `<td id="cell-${classId}-${d}-${p}" class="border border-gray-300 p-1 relative h-[72px] min-w-[100px] align-top bg-white droppable transition-colors" data-class="${classId}" data-day="${d}" data-period="${p}" ondragover="allowDrop(event)" ondrop="dropToCell(event, '${classId}', ${d}, ${p})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"></td>`;
+                    html += `<td id="cell-${classId}-${d}-${p}" class="border border-gray-300 p-1 relative h-[96px] min-w-[100px] align-top bg-white droppable transition-colors" data-class="${classId}" data-day="${d}" data-period="${p}" ondragover="allowDrop(event)" ondrop="dropToCell(event, '${classId}', ${d}, ${p})" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"></td>`;
                 }
                 html += `</tr>`;
             }
@@ -933,7 +933,7 @@
             if (isAdmin) el.ondblclick = (ev) => { ev.stopPropagation(); openInstanceEditModal(el.parentElement.id); };
             
             const tSpans = createTeacherSpans(instanceData.mainTeacher, instanceData.tas);
-            el.innerHTML = `<div class="font-bold ${hasNoTeacher ? 'text-red-700' : 'text-gray-900'} break-words mb-0.5 line-clamp-2 pointer-events-none">${hasNoTeacher ? '⚠️ ' : ''}${course.unit}</div><div class="truncate mt-auto">${tSpans.mainTeacherSpan}</div>${tSpans.tasHtml}`;
+            el.innerHTML = `<div class="font-bold ${hasNoTeacher ? 'text-red-700' : 'text-gray-900'} break-words mb-0.5 line-clamp-3 pointer-events-none">${hasNoTeacher ? '⚠️ ' : ''}${course.unit}</div><div class="truncate mt-auto">${tSpans.mainTeacherSpan}</div>${tSpans.tasHtml}`;
             return el;
         }
 
@@ -1735,8 +1735,8 @@
                 }
             }
 
-            // 計算公式列與欄寬
-            const lastColLetter = String.fromCharCode(67 + activePeriods.length);
+            // 計算公式列與欄寬 (座號 A, 姓名 B, 從 C 欄開始)
+            const lastColLetter = String.fromCharCode(66 + activePeriods.length);
             document.getElementById('gs-formula-bar').innerText = `=COUNTA(C4:${lastColLetter}4) // 本週學生實到點名格線統計`;
 
             // A-L 試算表欄位標題行 (模擬 Google Sheet 第一行灰色 A B C D...)
@@ -1749,19 +1749,19 @@
             for (let i = 0; i < activePeriods.length; i++) {
                 colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold">${String.fromCharCode(67 + i)}</td>`;
             }
-            colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-20">${lastColLetter}</td></tr>`;
+            colLettersHtml += `</tr>`;
 
-            // 試算表第一列、第二列：合併的大標題與中標題 (模擬 Google Sheet 行1、行2)
+            // 試算表第一列、第二列：合併的大標題與中標題 (合併寬度修正為 2 + 課堂數)
             let spreadsheetHeaderRows = `
                 <tr>
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">1</td>
-                    <td class="gs-cell-border text-center p-3 font-extrabold text-base tracking-widest text-slate-900 font-sans" colspan="${activePeriods.length + 3}">
+                    <td class="gs-cell-border text-center p-3 font-extrabold text-base tracking-widest text-slate-900 font-sans" colspan="${activePeriods.length + 2}">
                         🏫 彰化縣芬園鄉同安國民小學夏日樂學計畫 學生課堂點名簿 (整週一覽)
                     </td>
                 </tr>
                 <tr>
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">2</td>
-                    <td class="gs-cell-border p-2 text-xs text-left pl-4 text-gray-700 bg-emerald-50/40" colspan="${activePeriods.length + 3}">
+                    <td class="gs-cell-border p-2 text-xs text-left pl-4 text-gray-700 bg-emerald-50/40" colspan="${activePeriods.length + 2}">
                         <span class="font-bold text-emerald-800">班別：</span>${selClass === 'A' ? '甲班' : '乙班'} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                         <span class="font-bold text-emerald-800">週別日期：</span>第 ${w === 0 ? '一' : '二'} 週 (${getScheduleDate(wStart)} ~ ${getScheduleDate(wStart + 4)}) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
                         <span class="font-bold text-emerald-800">核銷計畫：</span>114年夏日樂學本土語活動方案-點名查核專用
@@ -1769,7 +1769,7 @@
                 </tr>
             `;
 
-            // 試算表第三列：課堂與主助教師資表頭 (模擬 Google Sheet 行3)
+            // 試算表第三列：課堂與主助教師資表頭 (移除最後的簽到備註)
             let periodHeadersHtml = `
                 <tr>
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">3</td>
@@ -1789,10 +1789,7 @@
                         </div>
                     </td>`;
             });
-            periodHeadersHtml += `
-                <td class="gs-cell-border p-2 bg-[#f8f9fa] text-center font-bold text-gray-800 text-[10px]">簽到備註</td>
-                </tr>
-            `;
+            periodHeadersHtml += `</tr>`;
 
             // 試算表行4開始：學生名單
             let rowsHtml = '';
@@ -1811,12 +1808,11 @@
                         <td class="gs-cell-border p-1 text-center font-mono text-[10px] text-gray-600">${name ? idx + 1 : ''}</td>
                         <td class="gs-cell-border p-1 text-center font-bold text-xs tracking-wide text-slate-800">${name}</td>
                         ${cells}
-                        <td class="gs-cell-border p-1 h-8 text-center text-[9px] text-gray-400"></td>
                     </tr>
                 `;
             });
 
-            // 試算表最底部的經辦蓋章列 (模擬 Google Sheet 的最後兩列)
+            // 試算表最底部的經辦蓋章列 (調整 colspan 以符合移除備註後的總欄寬)
             let bottomRow1 = sheetRowIndex++;
             let bottomRow2 = sheetRowIndex++;
             
@@ -2001,8 +1997,12 @@
             coursePool = state.pool || {};
             teacherMetadata = state.teacherMetadata || {}; 
             
-            studentsA = state.studentsA || ["王大同", "李小華", "陳阿明", "林美美", "張小凡", "黃大偉", "蔡曉彤", "許自強", "鄭雅婷", "郭子儀"];
-            studentsB = state.studentsB || ["趙子龍", "關雲長", "張翼德", "諸葛亮", "劉備備", "曹孟德", "孫仲謀", "周公瑾", "大喬喬", "小喬喬"];
+            if (state.studentsA && state.studentsA.length > 0) {
+                studentsA = state.studentsA;
+            }
+            if (state.studentsB && state.studentsB.length > 0) {
+                studentsB = state.studentsB;
+            }
             
             if (state.startDate) {
                 const dateInput = document.getElementById('schedule-start-date');
