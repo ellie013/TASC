@@ -36,9 +36,13 @@
         .sticky-col-shadow { box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1); }
         .sticky-row-shadow { box-shadow: 0 2px 5px -2px rgba(0,0,0,0.1); }
 
+        /* Google 試算表模擬樣式 */
+        .gs-header-gray { background-color: #f8f9fa; color: #5f6368; font-weight: bold; }
+        .gs-cell-border { border: 1px solid #cbd5e1 !important; }
+
         /* 列印最佳化設定 */
         @media print {
-            @page { margin: 0.6cm; } /* 移除 size: portrait，改由使用者或內容自動推薦橫直向 */
+            @page { margin: 0.5cm; size: landscape; } /* 點名簿強制橫向列印 */
             body, main { height: auto !important; overflow: visible !important; background-color: white !important; }
             
             body:not(.print-mode-teacher):not(.print-mode-payroll):not(.print-mode-single-payroll):not(.print-mode-signin):not(.print-mode-student) #print-only-container { display: none !important; }
@@ -82,11 +86,9 @@
 </head>
 <body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col font-sans text-gray-800" onclick="clearHighlightOnBackground(event)">
 
-    <!-- 列印專用容器 -->
     <div id="print-only-container" class="hidden"></div>
     <div id="print-payroll-container" class="hidden"></div>
     <div id="print-single-payroll-container" class="hidden"></div>
-    <!-- 補強：教師簽到與學生點名列印專用容器 -->
     <div id="print-signin-container" class="hidden"></div>
     <div id="print-student-container" class="hidden"></div>
 
@@ -103,14 +105,14 @@
                 <input type="date" id="schedule-start-date" class="border border-gray-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="2025-07-07" onchange="updateScheduleDates(); saveToCloud();">
             </div>
 
-            <!-- ✨ 升級功能：停課日排除器 -->
+            <!-- 停課日排除器 -->
             <div class="admin-btn hidden flex items-center gap-1.5 text-xs bg-red-50 border border-red-200 p-1.5 rounded shadow-inner" title="在此輸入停課日期，結算時將自動扣除鐘點費。例如: 7/8, 7/15">
                 <span class="text-red-700 font-bold">☔ 停課日扣除 (不計薪):</span>
                 <input type="text" id="suspend-dates-input" class="border border-red-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-red-500 text-center w-[120px]" placeholder="如: 7/8, 7/15" onchange="updatePayrollUI(); saveToCloud();">
             </div>
         </div>
         <div class="flex gap-2">
-            <!-- 補強：教師簽到表與學生點名簿按鈕 (放置於一般使用者亦可查閱處) -->
+            <!-- 補強：教師簽到表與學生點名簿按鈕 -->
             <button onclick="openTeacherSigninModal()" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded transition text-sm font-medium border border-emerald-200 shadow-sm">
                 📝 教師簽到表
             </button>
@@ -222,15 +224,14 @@
                 </button>
             </div>
             <div id="signin-table-container" class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar">
-                <!-- 簽到表由 JS 產生 -->
             </div>
         </div>
     </div>
 
     <div id="student-attendance-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
-        <div class="bg-white rounded-lg p-5 w-[1200px] max-w-[98vw] h-[88vh] max-h-[92vh] flex flex-col shadow-2xl">
+        <div class="bg-white rounded-lg p-5 w-[1300px] max-w-[99vw] h-[90vh] max-h-[94vh] flex flex-col shadow-2xl">
             <div class="flex justify-between items-center mb-3 border-b pb-2 shrink-0">
-                <h2 class="text-xl font-bold text-sky-800 flex items-center gap-2">👥 學生名單與逐節點名簿產生器</h2>
+                <h2 class="text-xl font-bold text-sky-800 flex items-center gap-2">👥 學生名簿與 Google 試算表高擬真點名系統</h2>
                 <button onclick="closeStudentAttendanceModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
             </div>
             <div class="grid grid-cols-4 gap-4 flex-1 overflow-hidden">
@@ -254,22 +255,48 @@
                     </button>
                 </div>
                 
-                <!-- 右側：點名表預覽區 -->
+                <!-- 右側：Google Sheets 風格點名表預覽與列印區 -->
                 <div class="col-span-3 flex flex-col h-full min-h-0">
                     <div class="flex flex-wrap justify-between items-center mb-2 gap-2 shrink-0">
                         <div class="flex items-center gap-2 text-sm font-bold">
-                            <span class="text-gray-700">選擇點名日期：</span>
+                            <span class="text-gray-700">選擇統計日期：</span>
                             <select id="student-attendance-day-select" class="border border-gray-300 rounded p-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-sky-500" onchange="renderStudentAttendancePreview()">
-                                <!-- 由 JS 動態生成 10 天選項 -->
                             </select>
-                            <span class="text-xs text-red-600 font-normal">💡 列印時，請於設定中將版面設為「橫向」並選擇 B4/A3/A4 即可完美塞滿單張紙！</span>
+                            <span class="text-xs text-red-600 font-normal">💡 列印時請務必在列印對話框內將版面設為「橫向」，以 B4/A3/A4 列印即可完美塞滿！</span>
                         </div>
-                        <button onclick="printStudentAttendance()" class="px-5 py-1.5 bg-sky-600 text-white rounded text-sm font-bold hover:bg-sky-700 shadow-sm flex items-center gap-1.5 transition-colors">
-                            🖨️ 列印此單日 8 節點名表
+                        <button onclick="printStudentAttendance()" class="px-5 py-1.5 bg-green-600 text-white rounded text-sm font-bold hover:bg-green-700 shadow-sm flex items-center gap-1.5 transition-colors">
+                            🖨️ 列印此 Google 試算表點名表
                         </button>
                     </div>
-                    <div id="student-preview-container" class="flex-1 overflow-auto bg-gray-50 border border-gray-200 rounded p-4 no-scrollbar">
-                        <!-- 點名表預覽由此載入 -->
+                    
+                    <!-- 模擬 Google 試算表網頁版介面 -->
+                    <div class="flex-1 overflow-auto bg-gray-50 border border-gray-300 rounded flex flex-col relative no-scrollbar">
+                        <!-- 試算表標題與工具選單 (列印時會被 @media print 自動隱藏) -->
+                        <div class="bg-white border-b shrink-0 p-2 text-xs flex flex-col gap-1 select-none print:hidden">
+                            <div class="flex items-center gap-2">
+                                <span class="text-green-700 text-lg font-bold">田</span>
+                                <span class="font-bold text-gray-800">同安國小 - 夏日樂學學生點名簿.xlsx</span>
+                                <span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]">已儲存至雲端</span>
+                            </div>
+                            <div class="flex gap-4 text-gray-600 font-medium">
+                                <span class="cursor-pointer hover:text-black">檔案</span>
+                                <span class="cursor-pointer hover:text-black">編輯</span>
+                                <span class="cursor-pointer hover:text-black">檢視</span>
+                                <span class="cursor-pointer hover:text-black">插入</span>
+                                <span class="cursor-pointer hover:text-black">格式</span>
+                                <span class="cursor-pointer hover:text-black">資料</span>
+                                <span class="cursor-pointer hover:text-black">工具</span>
+                                <span class="cursor-pointer hover:text-black">擴充功能</span>
+                            </div>
+                            <div class="flex items-center gap-3 bg-gray-50 border rounded p-1 mt-1 text-[11px] text-gray-500">
+                                <div class="font-mono bg-white px-2 py-0.5 border rounded">fx</div>
+                                <div class="font-mono flex-1 text-gray-800" id="gs-formula-bar">=SUM(D4:K4) // 當日 8 節課即時簽到格線</div>
+                            </div>
+                        </div>
+
+                        <!-- 實際要渲染與列印的試算表主體 -->
+                        <div id="student-preview-container" class="flex-1 p-4 bg-white overflow-auto no-scrollbar">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -285,112 +312,12 @@
             </div>
             <div class="flex gap-3 mb-4 shrink-0">
                 <select id="teacher-select" class="border border-gray-300 rounded p-2 flex-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500" onchange="renderTeacherSchedule()">
-                    <!-- 選項由 JS 動態生成 -->
                 </select>
                 <button onclick="printTeacherSchedule()" class="px-5 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-sm flex items-center gap-2 transition-colors">
                     🖨️ 列印此老師課表
                 </button>
             </div>
             <div id="teacher-schedule-container" class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar">
-                <!-- 老師課表由 JS 產生 -->
-            </div>
-        </div>
-    </div>
-
-    <!-- ✨ 鐘點費印領清冊 Modal -->
-    <div id="payroll-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
-        <div class="bg-white rounded-lg p-5 w-[980px] max-w-[98vw] h-[90vh] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="flex justify-between items-center mb-2 border-b pb-2 shrink-0">
-                <h2 class="text-xl font-bold text-indigo-800 flex items-center gap-2">💰 鐘點費印領清冊與憑證黏存單產生器</h2>
-                <button onclick="closePayrollModal()" class="text-gray-500 hover:text-red-500 text-2xl font-bold leading-none">&times;</button>
-            </div>
-            
-            <div class="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100 grid grid-cols-4 gap-3 text-xs mb-3 shrink-0">
-                <div class="col-span-2">
-                    <label class="block font-bold text-gray-700 mb-1">工作計畫名稱</label>
-                    <input type="text" id="payroll-project-name" class="w-full border border-gray-300 rounded p-1" value="114年夏日樂學計畫方案-本土語文活動課程及方案二整合式學習方案" oninput="updatePayrollUI()">
-                </div>
-                <div>
-                    <label class="block font-bold text-indigo-900 mb-1">統計班別</label>
-                    <select id="payroll-class-select" class="w-full border border-indigo-300 bg-indigo-50 rounded p-1 font-bold text-indigo-800" onchange="onPayrollClassChange()">
-                        <option value="A">甲班</option>
-                        <option value="B">乙班</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-bold text-gray-700 mb-1">班別註記 (顯示於核銷單)</label>
-                    <input type="text" id="payroll-class-note" class="w-full border border-gray-300 rounded p-1" value="甲班" oninput="updatePayrollUI()">
-                </div>
-                
-                <div>
-                    <label class="block font-bold text-gray-700 mb-1">年度 (民國)</label>
-                    <input type="number" id="payroll-year" class="w-full border border-gray-300 rounded p-1" value="114" oninput="updatePayrollUI()">
-                </div>
-                <div>
-                    <label class="block font-bold text-gray-700 mb-1">主教單價 (元/節)</label>
-                    <input type="number" id="payroll-main-rate" class="w-full border border-gray-300 rounded p-1" value="400" oninput="updatePayrollUI()">
-                </div>
-                <div>
-                    <label class="block font-bold text-gray-700 mb-1">助教單價 (元/節)</label>
-                    <input type="number" id="payroll-ta-rate" class="w-full border border-gray-300 rounded p-1" value="200" oninput="updatePayrollUI()">
-                </div>
-                <div>
-                    <label class="block font-bold text-gray-700 mb-1">用途摘要</label>
-                    <input type="text" id="payroll-abstract" class="w-full border border-gray-300 rounded p-1" value="內聘講師鐘點費及機關負擔健保補充保費" oninput="updatePayrollUI()">
-                </div>
-
-                <div>
-                    <label class="block font-bold text-gray-700 mb-1">選擇統計老師</label>
-                    <select id="payroll-teacher-select" class="w-full border border-gray-300 rounded p-1 font-bold text-indigo-800" onchange="onPayrollTeacherChange()">
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-bold text-indigo-900 mb-1">講師身分證字號</label>
-                    <input type="text" id="payroll-teacher-id" class="w-full border border-indigo-200 bg-indigo-50/50 rounded p-1" placeholder="例如: A123456789" oninput="saveTeacherInfo()">
-                </div>
-                <div class="col-span-2">
-                    <label class="block font-bold text-indigo-900 mb-1">講師戶籍地址</label>
-                    <input type="text" id="payroll-teacher-address" class="w-full border border-indigo-200 bg-indigo-50/50 rounded p-1" placeholder="例如: 彰化縣芬園鄉..." oninput="saveTeacherInfo()">
-                </div>
-                
-                <!-- Google Sheets API URL -->
-                <div class="col-span-4 bg-yellow-50 p-2 rounded border border-yellow-200">
-                    <label class="block font-bold text-yellow-800 mb-1">🔗 Google Sheets API 網址 (部署 Web App 後取得的 URL)</label>
-                    <input type="text" id="payroll-gas-url" class="w-full border border-yellow-300 rounded p-1 text-xs" placeholder="請貼上 https://script.google.com/macros/s/.../exec">
-                </div>
-                
-                <div class="flex items-center gap-4 col-span-4 pt-1 border-t border-indigo-100">
-                    <label class="flex items-center gap-1 font-bold text-gray-700 cursor-pointer">
-                        <input type="checkbox" id="payroll-is-internal" checked onchange="updatePayrollUI()">
-                        講師為本機關投保人員 (內聘，免扣補充保費自付額)
-                    </label>
-                    <label class="flex items-center gap-1 font-bold text-gray-700 cursor-pointer">
-                        <input type="checkbox" id="payroll-is-union" onchange="updatePayrollUI()">
-                        參加職業工會 (免扣補充自付額，需檢附證明)
-                    </label>
-                </div>
-            </div>
-
-            <div class="flex border-b border-gray-200 mb-2 shrink-0 text-sm">
-                <button id="tab-payroll-single" onclick="switchPayrollTab('single')" class="py-2 px-6 font-bold border-b-2 border-indigo-600 text-indigo-700">📄 1人單面含支出憑證黏存單</button>
-                <button id="tab-payroll-summary" onclick="switchPayrollTab('summary')" class="py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600">📊 全員彙整統計總清單</button>
-            </div>
-
-            <div class="flex-1 overflow-auto bg-gray-100 p-4 rounded border border-gray-200 no-scrollbar relative">
-                <div id="payroll-single-preview" class="space-y-4"></div>
-                <div id="payroll-summary-preview" class="hidden">
-                    <div id="payroll-summary-container"></div>
-                </div>
-            </div>
-            
-            <div class="flex justify-end gap-3 mt-3 pt-2 border-t shrink-0">
-                <button onclick="closePayrollModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded font-bold hover:bg-gray-300 transition-colors">關閉視窗</button>
-                <button id="btn-export-gas" onclick="exportToGoogleSheets()" class="px-6 py-2 bg-green-600 text-white rounded font-bold hover:bg-green-700 shadow-sm flex items-center gap-2 transition-all">
-                    📤 匯出此人簽呈至 Google Sheets
-                </button>
-                <button id="btn-print-payroll" onclick="printActivePayroll()" class="px-6 py-2 bg-indigo-600 text-white rounded font-bold hover:bg-indigo-700 shadow-sm flex items-center gap-2 transition-colors">
-                    🖨️ 列印報表 (自動排版)
-                </button>
             </div>
         </div>
     </div>
@@ -504,25 +431,23 @@
         // ==========================================
         const ADMIN_PASSWORD = "123"; 
 
-        // ⚠️⚠️⚠️ 請在這裡貼上您的 Firebase 金鑰 ⚠️⚠️⚠️
-          const firebaseConfig = {
-      apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
-      authDomain: "tasc-schedule.firebaseapp.com",
-      projectId: "tasc-schedule",
-      storageBucket: "tasc-schedule.firebasestorage.app",
-      messagingSenderId: "829044730170",
-      appId: "1:829044730170:web:0d5c864d9b90340d200803"
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
         };
 
         let db = null;
         let isAdmin = false;
         let payrollActiveTab = "single"; 
         let teacherMetadata = {}; 
-        let googleGasUrl = ""; // 自訂儲存 Google Apps Script URL
+        let googleGasUrl = ""; 
         
-        // 補強與新增：增加學生名冊全域陣列
-        let studentsA = [];
-        let studentsB = [];
+        let studentsA = ["王大同", "李小華", "陳阿明", "林美美", "張小凡", "黃大偉", "蔡曉彤", "許自強", "鄭雅婷", "郭子儀"];
+        let studentsB = ["趙子龍", "關雲長", "張翼德", "諸葛亮", "劉備備", "曹孟德", "孫仲謀", "周公瑾", "大喬喬", "小喬喬"];
 
         function toggleAdminMode() {
             if (isAdmin) {
@@ -622,13 +547,9 @@
             if (document.getElementById('payroll-modal') && !document.getElementById('payroll-modal').classList.contains('hidden')) {
                 updatePayrollUI();
             }
-            // 同步更新點名預覽與簽到表預覽日期
             if (document.getElementById('student-attendance-modal') && !document.getElementById('student-attendance-modal').classList.contains('hidden')) {
                 populateAttendanceDaySelect();
                 renderStudentAttendancePreview();
-            }
-            if (document.getElementById('teacher-signin-modal') && !document.getElementById('teacher-signin-modal').classList.contains('hidden')) {
-                renderTeacherSigninTable();
             }
         }
 
@@ -1089,8 +1010,6 @@
         // ==========================================
         // 💰 9.2 印領清冊與對接 Google Sheets (含停課日過濾)
         // ==========================================
-        
-        // 輔助函數：取得停課日陣列
         function getSuspendedDatesArray() {
             const input = document.getElementById('suspend-dates-input');
             if (!input) return [];
@@ -1154,7 +1073,6 @@
                 if (classId !== classSelect) return; 
                 if (!teacher || teacher === '未指定' || teacher.trim() === '') return;
                 
-                // ✨ 升級邏輯：如果這天在停課名單中，直接跳過不計算！
                 const dateStr = getScheduleDate(dayIndex);
                 if (suspendedDates.includes(dateStr)) return;
 
@@ -1598,11 +1516,10 @@
             let activeDaysList = [];
             let unitNamesList = [];
             
-            // 掃描課程，並自動過濾掉停課日
             const scanClass = (sched, classId) => {
                 for (let d = 0; d < 10; d++) {
                     const dateStr = getScheduleDate(d);
-                    if (suspendedDates.includes(dateStr)) continue; // ☔ 停課日攔截！
+                    if (suspendedDates.includes(dateStr)) continue;
 
                     for (let p = 0; p < 8; p++) {
                         const inst = sched[d][p];
@@ -1676,9 +1593,8 @@
         }
 
         // ==========================================
-        // 學生名冊及新加入功能 logic 實作
+        // 👥 學生點名簿 - 高擬真 Google 試算表渲染邏輯
         // ==========================================
-
         function onStudentModalClassChange() {
             const selClass = document.getElementById('student-modal-class-select').value;
             const textarea = document.getElementById('student-names-textarea');
@@ -1693,8 +1609,6 @@
         function saveStudentList() {
             const selClass = document.getElementById('student-modal-class-select').value;
             const text = document.getElementById('student-names-textarea').value;
-            
-            // 一人一行，自動過濾空行
             const list = text.split('\n').map(n => n.trim()).filter(n => n !== "");
             
             if (selClass === 'A') {
@@ -1704,8 +1618,6 @@
             }
             
             renderStudentAttendancePreview();
-            
-            // 觸存存檔
             if (isAdmin) {
                 saveToCloud();
             } else {
@@ -1724,7 +1636,6 @@
             document.getElementById('student-attendance-modal').classList.add('hidden');
         }
 
-        // 動態生成 10 天的下拉選單選項
         function populateAttendanceDaySelect() {
             const select = document.getElementById('student-attendance-day-select');
             if (!select) return;
@@ -1737,7 +1648,7 @@
             }
         }
 
-        // 渲染 A4/B4/A3 橫式自動排版「單日 8 節課完整點名表」
+        // 渲染高擬真 Google 試算表樣式（Gridlines, 行號與 A-L 列標）
         function renderStudentAttendancePreview() {
             const selClass = document.getElementById('student-modal-class-select').value;
             const list = selClass === 'A' ? studentsA : studentsB;
@@ -1746,8 +1657,10 @@
             
             const sched = selClass === 'A' ? scheduleA : scheduleB;
             
-            // 固定生成 1 到 8 節課的欄位
+            // 8節課課堂數據對應
             let activePeriods = [];
+            const times = ["08:40-09:20", "09:30-10:10", "10:20-11:00", "11:10-11:50", "13:30-14:10", "14:20-15:00", "15:10-15:50", "16:00-16:40"];
+            
             for (let p = 0; p < 8; p++) {
                 const inst = sched[d][p];
                 if (inst) {
@@ -1755,6 +1668,7 @@
                     activePeriods.push({
                         hasCourse: true,
                         periodIndex: p,
+                        time: times[p],
                         unit: course ? course.unit : "課堂單元",
                         mainTeacher: inst.mainTeacher || "未指定",
                         tas: inst.tas || ""
@@ -1763,76 +1677,124 @@
                     activePeriods.push({
                         hasCourse: false,
                         periodIndex: p,
-                        unit: "無安排課程",
+                        time: times[p],
+                        unit: "-",
                         mainTeacher: "-",
                         tas: ""
                     });
                 }
             }
 
-            // 表頭日期與逐節課程/師資動態生成 (固定 8 節欄寬)
-            let dateHeadersHtml = '';
-            activePeriods.forEach(ap => {
-                const taText = ap.tas ? `<br><span class="text-[8px] font-normal text-emerald-700 leading-none">助:${ap.tas}</span>` : '';
-                dateHeadersHtml += `
-                    <th class="border border-black p-1 text-center bg-gray-50 text-[9px] w-[10%] min-w-[70px] leading-tight font-sans">
-                        <div class="font-bold text-gray-800">第 ${ap.periodIndex + 1} 節</div>
-                        <div class="text-blue-800 font-bold truncate max-w-[85px] my-0.5" title="${ap.unit}">${ap.unit}</div>
-                        <div class="text-[8px] text-gray-500 font-normal leading-none">
-                            <span class="text-blue-700">主:${ap.mainTeacher}</span>${taText}
-                        </div>
-                    </th>`;
-            });
+            // A-L 試算表欄位標題行 (模擬 Google Sheet 第一行灰色 A B C D...)
+            let colLettersHtml = `
+                <tr class="gs-header-gray">
+                    <td class="gs-cell-border text-center p-1 text-[10px] w-6 bg-[#f1f3f4] shrink-0 border-r-2"></td>
+                    <td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-12">A</td>
+                    <td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-24">B</td>
+            `;
+            const letters = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+            for (let i = 0; i < 8; i++) {
+                colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold">${letters[i]}</td>`;
+            }
+            colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-20">K</td></tr>`;
 
+            // 試算表第一列、第二列：合併的大標題與中標題 (模擬 Google Sheet 行1、行2)
+            let spreadsheetHeaderRows = `
+                <tr>
+                    <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">1</td>
+                    <td class="gs-cell-border text-center p-3 font-extrabold text-base tracking-widest text-slate-900 font-sans" colspan="10">
+                        🏫 彰化縣芬園鄉同安國民小學夏日樂學計畫 學生課堂點名簿
+                    </td>
+                    <td class="gs-cell-border"></td>
+                </tr>
+                <tr>
+                    <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">2</td>
+                    <td class="gs-cell-border p-2 text-xs text-left pl-4 text-gray-700 bg-emerald-50/40" colspan="10">
+                        <span class="font-bold text-emerald-800">班別：</span>${selClass === 'A' ? '甲班' : '乙班'} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                        <span class="font-bold text-emerald-800">日期：</span>${getScheduleDate(d)} (${days[d]}) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                        <span class="font-bold text-emerald-800">計畫：</span>114年夏日樂學本土語活動方案
+                    </td>
+                    <td class="gs-cell-border bg-emerald-50/40"></td>
+                </tr>
+            `;
+
+            // 試算表第三列：課堂與主助教師資表頭 (模擬 Google Sheet 行3)
+            let periodHeadersHtml = `
+                <tr>
+                    <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">3</td>
+                    <td class="gs-cell-border p-2 bg-[#f8f9fa] text-center font-bold text-gray-800 text-[10px]">座號</td>
+                    <td class="gs-cell-border p-2 bg-[#f8f9fa] text-center font-bold text-gray-800 text-[10px]">學生姓名</td>
+            `;
+            activePeriods.forEach(ap => {
+                const taText = ap.tas ? `<br><span class="text-[8px] text-emerald-700 font-medium">助:${ap.tas}</span>` : '';
+                periodHeadersHtml += `
+                    <td class="gs-cell-border p-1 bg-[#f8f9fa] text-center font-sans">
+                        <div class="font-extrabold text-blue-900 text-[10px] leading-tight">第 ${ap.periodIndex + 1} 節</div>
+                        <div class="text-[9px] text-gray-400 font-mono scale-95 leading-none">${ap.time}</div>
+                        <div class="text-slate-800 font-bold truncate max-w-[90px] my-0.5 text-[10px]" title="${ap.unit}">${ap.unit}</div>
+                        <div class="text-[8px] leading-none text-gray-500 scale-95">
+                            <span class="text-blue-700 font-semibold">主:${ap.mainTeacher}</span>${taText}
+                        </div>
+                    </td>`;
+            });
+            periodHeadersHtml += `
+                <td class="gs-cell-border p-2 bg-[#f8f9fa] text-center font-bold text-gray-800 text-[10px]">簽到備註</td>
+                </tr>
+            `;
+
+            // 試算表行4開始：學生名單
             let rowsHtml = '';
-            const displayList = list.length > 0 ? list : Array(15).fill(""); // 如果名單為空，預設提供 15 行空白行供手寫
+            const displayList = list.length > 0 ? list : Array(12).fill(""); 
+            let sheetRowIndex = 4; // 試算表左側灰色行號從 4 開始
 
             displayList.forEach((name, idx) => {
                 let cells = '';
                 activePeriods.forEach((ap) => {
-                    // 如果該節無課，格子反灰但仍保留簽到格，或者保持空白
-                    const bgClass = ap.hasCourse ? "bg-white" : "bg-gray-100/50";
-                    cells += `<td class="border border-black p-1 h-8 ${bgClass}"></td>`;
+                    const bgClass = ap.hasCourse ? "bg-white" : "bg-gray-50/50";
+                    cells += `<td class="gs-cell-border p-1 h-8 ${bgClass} text-center"></td>`;
                 });
                 rowsHtml += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="border border-black p-1 text-center font-mono text-[10px] h-8">${name ? idx + 1 : ''}</td>
-                        <td class="border border-black p-1 text-center font-bold text-xs tracking-wide text-gray-800 h-8">${name}</td>
+                    <tr>
+                        <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">${sheetRowIndex++}</td>
+                        <td class="gs-cell-border p-1 text-center font-mono text-[10px] text-gray-600">${name ? idx + 1 : ''}</td>
+                        <td class="gs-cell-border p-1 text-center font-bold text-xs tracking-wide text-slate-800">${name}</td>
                         ${cells}
-                        <td class="border border-black p-1 h-8"></td>
+                        <td class="gs-cell-border p-1 h-8 text-center text-[9px] text-gray-400"></td>
                     </tr>
                 `;
             });
 
-            const tableHtml = `
-                <div class="bg-white p-4 rounded shadow-sm w-full mx-auto border border-gray-300 text-black font-sans leading-none text-[11px] print:p-0 print:border-0" style="width: 100%; max-width: 100%;">
-                    <div class="text-center font-bold text-sm mb-0.5">彰化縣芬園鄉同安國民小學</div>
-                    <div class="text-center font-bold text-base mb-2 tracking-wider">夏日樂學 學生簽到點名簿 (${selClass === 'A' ? '甲班' : '乙班'})</div>
-                    
-                    <div class="flex justify-between items-center text-[10px] font-bold text-gray-600 mb-1">
-                        <div>統計日期：${getScheduleDate(d)} (${days[d]})</div>
-                        <div>列印設定提示：請將印表機版面設定為「橫向 (Landscape)」，紙張選擇 B4 / A3 / A4。</div>
-                    </div>
+            // 試算表最底部的經辦蓋章列 (模擬 Google Sheet 的最後兩列)
+            let bottomRow1 = sheetRowIndex++;
+            let bottomRow2 = sheetRowIndex++;
+            
+            rowsHtml += `
+                <tr class="h-10">
+                    <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">${bottomRow1}</td>
+                    <td class="gs-cell-border p-2 text-left text-[10px] text-gray-600 bg-gray-50/50 pl-4 font-bold" colspan="11">
+                        ✍️ 授課導師/帶班助教簽核：_______________________ (簽章) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 承辦人簽章：_______________________
+                    </td>
+                </tr>
+                <tr class="h-10">
+                    <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">${bottomRow2}</td>
+                    <td class="gs-cell-border p-2 text-left text-[10px] text-gray-600 bg-gray-50/50 pl-4 font-bold" colspan="11">
+                        🏫 教務主任：_______________________ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 校長簽章：_______________________
+                    </td>
+                </tr>
+            `;
 
-                    <table class="w-full border-collapse border border-black text-center mb-2" style="table-layout: fixed; width: 100%;">
+            const tableHtml = `
+                <div class="bg-white rounded w-full mx-auto text-black font-sans leading-none text-[11px] print:p-0 print:border-0" style="width: 100%; max-width: 100%;">
+                    <table class="w-full border-collapse text-center" style="table-layout: fixed; width: 100%;">
                         <thead>
-                            <tr class="bg-gray-100 font-bold border border-black">
-                                <th class="border border-black p-1 text-center w-[4%] text-[10px]">座號</th>
-                                <th class="border border-black p-1 text-center w-[10%] text-[10px]">學生姓名</th>
-                                ${dateHeadersHtml}
-                                <th class="border border-black p-1 text-center w-[6%] text-[10px]">備註</th>
-                            </tr>
+                            ${colLettersHtml}
                         </thead>
                         <tbody>
+                            ${spreadsheetHeaderRows}
+                            ${periodHeadersHtml}
                             ${rowsHtml}
                         </tbody>
                     </table>
-
-                    <div class="flex justify-between items-center text-[10px] text-gray-500 mt-2 border-t pt-1 border-dashed border-gray-300">
-                        <div>經辦導師/帶班助教：_________________ (簽章)</div>
-                        <div>承辦人簽章：_________________</div>
-                        <div>校長：_________________</div>
-                    </div>
                 </div>
             `;
             container.innerHTML = tableHtml;
@@ -1846,6 +1808,9 @@
             document.body.classList.remove('print-mode-student');
         }
 
+        // ==========================================
+        // ✍️ 教師簽到表與點名預覽
+        // ==========================================
         function openTeacherSigninModal() {
             renderTeacherSigninTable();
             document.getElementById('teacher-signin-modal').classList.remove('hidden');
@@ -1878,7 +1843,6 @@
                                 <th class="border border-gray-400 p-2 w-14 text-center font-bold">節數</th>
             `;
 
-            // 動態表頭
             for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
                 html += `
                     <th class="border border-gray-400 p-2 w-1/5 text-center font-bold bg-gray-50">
@@ -1888,7 +1852,6 @@
             }
             html += `</tr></thead><tbody>`;
 
-            // 課表格線主體，預留手寫簽名底線
             for (let p = 0; p < 8; p++) {
                 html += `<tr><td class="border border-gray-400 p-2 text-center font-bold bg-gray-100 w-14">第 ${p+1} 節</td>`;
                 for (let d = weekIndex * 5; d < weekIndex * 5 + 5; d++) {
@@ -1899,7 +1862,6 @@
                         const course = coursePool[inst.courseId];
                         const signBorder = colorMode === 'color' && course ? `style="background-color:${course.color.bg}; border-color:${course.color.border};"` : '';
                         
-                        // 帶有簽名底線的課表單元
                         html += `
                             <div class="w-full h-full rounded p-1 flex flex-col justify-between" ${signBorder}>
                                 <div class="font-bold text-gray-800 border-b border-gray-200 pb-0.5 leading-tight">${course ? course.unit : '課堂主題'}</div>
@@ -1960,88 +1922,6 @@
         }
 
         // ==========================================
-        // 📑 10. 資料匯入與編輯模組
-        // ==========================================
-        function generateId() { return 'c-' + Date.now() + '-' + Math.floor(Math.random()*1000); }
-        function addNewCourse() {
-            const id = generateId();
-            coursePool[id] = { unit:"新單元", mainTeacher:"未指定", tas:"", total:1, remaining:1, targetClass:currentViewClass, color:getNextColor() };
-            renderPool(); openEditModal(id);
-        }
-        function openEditModal(id, ev) { if(ev) ev.stopPropagation(); currentlyEditingCourseId = id; const c = coursePool[id]; document.getElementById('edit-unit').value = c.unit; document.getElementById('edit-main-teacher').value = c.mainTeacher; document.getElementById('edit-tas').value = c.tas; document.getElementById('edit-total').value = c.total; document.getElementById('edit-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-        function saveCourseEdit() {
-            const id = currentlyEditingCourseId;
-            const nT = parseInt(document.getElementById('edit-total').value) || 1;
-            const diff = nT - coursePool[id].total;
-            coursePool[id].unit = document.getElementById('edit-unit').value || "未命名";
-            coursePool[id].mainTeacher = document.getElementById('edit-main-teacher').value || "未指定";
-            coursePool[id].tas = document.getElementById('edit-tas').value;
-            coursePool[id].total = nT;
-            coursePool[id].remaining = Math.max(0, coursePool[id].remaining + diff);
-            
-            const sync = (s, cId) => { for(let d=0;d<10;d++)for(let p=0;p<8;p++)if(s[d][p]&&s[d][p].courseId===id){ s[d][p].mainTeacher=coursePool[id].mainTeacher; s[d][p].tas=coursePool[id].tas; const cell=document.getElementById(`cell-${cId}-${d}-${p}`); cell.innerHTML=''; cell.appendChild(createInstanceCard(s[d][p]));}};
-            sync(scheduleA, 'A'); sync(scheduleB, 'B');
-            checkAllConflicts(); renderPool(); closeModal();
-        }
-        function promptDeleteCourse() { closeDeleteCourseModal(); courseToDeleteId = currentlyEditingCourseId; document.getElementById('delete-course-modal').classList.remove('hidden'); }
-        function promptDeleteCourseFromPool(id, ev) { if(ev) ev.stopPropagation(); courseToDeleteId = id; document.getElementById('delete-course-modal').classList.remove('hidden'); }
-        function closeDeleteCourseModal() { document.getElementById('delete-course-modal').classList.add('hidden'); }
-        function executeDeleteCourse() {
-            const id = courseToDeleteId;
-            for(let d=0;d<10;d++)for(let p=0;p<8;p++){
-                if(scheduleA[d][p]&&scheduleA[d][p].courseId===id){ scheduleA[d][p]=null; document.getElementById(`cell-A-${d}-${p}`).innerHTML=''; }
-                if(scheduleB[d][p]&&scheduleB[d][p].courseId===id){ scheduleB[d][p]=null; document.getElementById(`cell-B-${d}-${p}`).innerHTML=''; }
-            }
-            delete coursePool[id]; checkAllConflicts(); renderPool(); closeDeleteCourseModal(); closeModal();
-        }
-        function promptClearPool() { document.getElementById('clear-pool-class-name').innerText = currentViewClass==='A'?'甲班':'乙班'; document.getElementById('clear-pool-modal').classList.remove('hidden'); }
-        function closeClearPoolModal() { document.getElementById('clear-pool-modal').classList.add('hidden'); }
-        function executeClearPool() {
-            Object.keys(coursePool).forEach(id => {
-                if((coursePool[id].targetClass||'A')===currentViewClass) {
-                    for(let d=0;d<10;d++)for(let p=0;p<8;p++){
-                        if(scheduleA[d][p]&&scheduleA[d][p].courseId===id){ scheduleA[d][p]=null; document.getElementById(`cell-A-${d}-${p}`).innerHTML=''; }
-                        if(scheduleB[d][p]&&scheduleB[d][p].courseId===id){ scheduleB[d][p]=null; document.getElementById(`cell-B-${d}-${p}`).innerHTML=''; }
-                    }
-                    delete coursePool[id];
-                }
-            });
-            checkAllConflicts(); renderPool(); closeClearPoolModal();
-        }
-
-        function openImportModal() { document.getElementById('import-modal-title').innerText = `貼上 ${currentViewClass==='A'?'甲班':'乙班'} Google Sheets 資料`; document.getElementById('import-textarea').value=''; document.getElementById('import-modal').classList.remove('hidden'); }
-        function closeImportModal() { document.getElementById('import-modal').classList.add('hidden'); }
-        function processImport() {
-            const rows = document.getElementById('import-textarea').value.split('\n');
-            let cnt = 0;
-            rows.forEach(r => {
-                if(!r.trim()) return;
-                const cols = r.split('\t'); if(cols.length < 2) return;
-                const unit = cols[0].trim(); const periods = parseInt(cols[1]) || 0;
-                if(periods <= 0) return;
-                const tList = (cols[2]||"").split(/[,、/／\s]+/).filter(t=>t.trim());
-                const mainTeacher = tList.length > 0 ? tList[0] : "未指定";
-                const tas = tList.length > 1 ? tList.slice(1).join(", ") : "";
-                coursePool[generateId()] = { unit, mainTeacher, tas, total:periods, remaining:periods, targetClass:currentViewClass, color:getNextColor() };
-                cnt++;
-            });
-            renderPool(); closeImportModal(); if(cnt>0) showToast("成功快速匯入 " + cnt + " 筆排課主題", "success");
-        }
-
-        function resetSchedule() { document.getElementById('reset-modal').classList.remove('hidden'); }
-        function closeResetModal() { document.getElementById('reset-modal').classList.add('hidden'); }
-        function executeReset() {
-            closeResetModal();
-            for(let d=0;d<10;d++)for(let p=0;p<8;p++){
-                scheduleA[d][p]=null; document.getElementById(`cell-A-${d}-${p}`).innerHTML='';
-                scheduleB[d][p]=null; document.getElementById(`cell-B-${d}-${p}`).innerHTML='';
-            }
-            Object.values(coursePool).forEach(c => c.remaining = c.total);
-            checkAllConflicts(); renderPool();
-        }
-
-        // ==========================================
         // 💾 11. 【安全升級】雲端資料庫編碼與儲存核心
         // ==========================================
         function serializeState() { 
@@ -2069,9 +1949,8 @@
             coursePool = state.pool || {};
             teacherMetadata = state.teacherMetadata || {}; 
             
-            // 補強：解序列化載入學生名單
-            studentsA = state.studentsA || [];
-            studentsB = state.studentsB || [];
+            studentsA = state.studentsA || ["王大同", "李小華", "陳阿明", "林美美", "張小凡", "黃大偉", "蔡曉彤", "許自強", "鄭雅婷", "郭子儀"];
+            studentsB = state.studentsB || ["趙子龍", "關雲長", "張翼德", "諸葛亮", "劉備備", "曹孟德", "孫仲謀", "周公瑾", "大喬喬", "小喬喬"];
             
             if (state.startDate) {
                 const dateInput = document.getElementById('schedule-start-date');
