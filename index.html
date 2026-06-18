@@ -259,10 +259,11 @@
                 <div class="col-span-3 flex flex-col h-full min-h-0">
                     <div class="flex flex-wrap justify-between items-center mb-2 gap-2 shrink-0">
                         <div class="flex items-center gap-2 text-sm font-bold">
-                            <span class="text-gray-700">選擇統計日期：</span>
-                            <select id="student-attendance-day-select" class="border border-gray-300 rounded p-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-sky-500" onchange="renderStudentAttendancePreview()">
+                            <!-- ✨ 升級為週別選擇器 -->
+                            <span class="text-gray-700">選擇統計週別：</span>
+                            <select id="student-attendance-week-select" class="border border-gray-300 rounded p-1 font-bold text-gray-700 outline-none focus:ring-2 focus:ring-sky-500" onchange="renderStudentAttendancePreview()">
                             </select>
-                            <span class="text-xs text-red-600 font-normal">💡 列印時請務必在列印對話框內將版面設為「橫向」，以 B4/A3/A4 列印即可完美塞滿！</span>
+                            <span class="text-xs text-red-600 font-normal">💡 已整合為「一週一張點名表」。請在列印對話框內將版面設為「橫向」，以 B4/A3/A4 即可完美列印！</span>
                         </div>
                         <button onclick="printStudentAttendance()" class="px-5 py-1.5 bg-green-600 text-white rounded text-sm font-bold hover:bg-green-700 shadow-sm flex items-center gap-1.5 transition-colors">
                             🖨️ 列印此 Google 試算表點名表
@@ -271,11 +272,11 @@
                     
                     <!-- 模擬 Google 試算表網頁版介面 -->
                     <div class="flex-1 overflow-auto bg-gray-50 border border-gray-300 rounded flex flex-col relative no-scrollbar">
-                        <!-- 試算表標題與工具選單 (列印時會被 @media print 自動隱藏) -->
+                        <!-- 試算表標題與工具選單 -->
                         <div class="bg-white border-b shrink-0 p-2 text-xs flex flex-col gap-1 select-none print:hidden">
                             <div class="flex items-center gap-2">
                                 <span class="text-green-700 text-lg font-bold">田</span>
-                                <span class="font-bold text-gray-800">同安國小 - 夏日樂學學生點名簿.xlsx</span>
+                                <span class="font-bold text-gray-800">同安國小 - 夏日樂學學生週點名簿.xlsx</span>
                                 <span class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]">已儲存至雲端</span>
                             </div>
                             <div class="flex gap-4 text-gray-600 font-medium">
@@ -290,7 +291,7 @@
                             </div>
                             <div class="flex items-center gap-3 bg-gray-50 border rounded p-1 mt-1 text-[11px] text-gray-500">
                                 <div class="font-mono bg-white px-2 py-0.5 border rounded">fx</div>
-                                <div class="font-mono flex-1 text-gray-800" id="gs-formula-bar">=SUM(D4:K4) // 當日 8 節課即時簽到格線</div>
+                                <div class="font-mono flex-1 text-gray-800" id="gs-formula-bar">=SUM(C4:G4) // 整週不重複課堂簽到格線</div>
                             </div>
                         </div>
 
@@ -548,7 +549,7 @@
                 updatePayrollUI();
             }
             if (document.getElementById('student-attendance-modal') && !document.getElementById('student-attendance-modal').classList.contains('hidden')) {
-                populateAttendanceDaySelect();
+                populateAttendanceWeekSelect();
                 renderStudentAttendancePreview();
             }
         }
@@ -1593,7 +1594,7 @@
         }
 
         // ==========================================
-        // 👥 學生點名簿 - 高擬真 Google 試算表渲染邏輯
+        // 👥 學生週點名簿 - 高擬真 Google 試算表去重合併渲染邏輯
         // ==========================================
         function onStudentModalClassChange() {
             const selClass = document.getElementById('student-modal-class-select').value;
@@ -1627,7 +1628,7 @@
         }
 
         function openStudentAttendanceModal() {
-            populateAttendanceDaySelect();
+            populateAttendanceWeekSelect();
             onStudentModalClassChange();
             document.getElementById('student-attendance-modal').classList.remove('hidden');
         }
@@ -1636,54 +1637,107 @@
             document.getElementById('student-attendance-modal').classList.add('hidden');
         }
 
-        function populateAttendanceDaySelect() {
-            const select = document.getElementById('student-attendance-day-select');
+        // 智慧型：動態生成第一週/第二週的日期範圍選單
+        function populateAttendanceWeekSelect() {
+            const select = document.getElementById('student-attendance-week-select');
             if (!select) return;
             select.innerHTML = '';
-            for (let d = 0; d < 10; d++) {
-                const dateStr = getScheduleDate(d);
-                const dayName = days[d];
-                const weekNum = d < 5 ? "第一週" : "第二週";
-                select.innerHTML += `<option value="${d}">${weekNum} - ${dayName} (${dateStr})</option>`;
-            }
+            
+            const w1Start = getScheduleDate(0);
+            const w1End = getScheduleDate(4);
+            const w2Start = getScheduleDate(5);
+            const w2End = getScheduleDate(9);
+            
+            select.innerHTML += `<option value="0">第一週 (${w1Start} ~ ${w1End})</option>`;
+            select.innerHTML += `<option value="1">第二週 (${w2Start} ~ ${w2End})</option>`;
         }
 
-        // 渲染高擬真 Google 試算表樣式（Gridlines, 行號與 A-L 列標）
+        // 渲染高擬真一週一張學生點名表 (去重合併版，專供一頁極致橫向列印)
         function renderStudentAttendancePreview() {
             const selClass = document.getElementById('student-modal-class-select').value;
             const list = selClass === 'A' ? studentsA : studentsB;
             const container = document.getElementById('student-preview-container');
-            const d = parseInt(document.getElementById('student-attendance-day-select').value) || 0;
+            const w = parseInt(document.getElementById('student-attendance-week-select').value) || 0;
             
             const sched = selClass === 'A' ? scheduleA : scheduleB;
+            const suspendedDates = getSuspendedDatesArray();
             
-            // 8節課課堂數據對應
+            // ✨ 核心升級：抓取一整週 (5天) 去重合併後的課程點名直欄
             let activePeriods = [];
-            const times = ["08:40-09:20", "09:30-10:10", "10:20-11:00", "11:10-11:50", "13:30-14:10", "14:20-15:00", "15:10-15:50", "16:00-16:40"];
+            const wStart = w * 5;
             
-            for (let p = 0; p < 8; p++) {
-                const inst = sched[d][p];
-                if (inst) {
-                    const course = coursePool[inst.courseId];
-                    activePeriods.push({
-                        hasCourse: true,
-                        periodIndex: p,
-                        time: times[p],
-                        unit: course ? course.unit : "課堂單元",
-                        mainTeacher: inst.mainTeacher || "未指定",
-                        tas: inst.tas || ""
-                    });
-                } else {
+            for (let d = wStart; d < wStart + 5; d++) {
+                const dateStr = getScheduleDate(d);
+                const dayName = days[d];
+                
+                if (suspendedDates.includes(dateStr)) {
+                    // ☔ 停課日標註排除
                     activePeriods.push({
                         hasCourse: false,
-                        periodIndex: p,
-                        time: times[p],
-                        unit: "-",
+                        dayIndex: d,
+                        dateStr: dateStr,
+                        dayName: dayName,
+                        courseId: null,
+                        unit: "☔ 停課 (免點名)",
+                        mainTeacher: "-",
+                        tas: ""
+                    });
+                    continue;
+                }
+
+                // 統計當日有幾門不重複的課程
+                let dayUniqueCourses = [];
+                for (let p = 0; p < 8; p++) {
+                    const inst = sched[d][p];
+                    if (inst) {
+                        const course = coursePool[inst.courseId];
+                        if (course) {
+                            // 判斷是否已經有這門課的點名欄
+                            const alreadyAdded = dayUniqueCourses.some(c => c.courseId === inst.courseId);
+                            if (!alreadyAdded) {
+                                dayUniqueCourses.push({
+                                    courseId: inst.courseId,
+                                    unit: course.unit,
+                                    mainTeacher: inst.mainTeacher || "未指定",
+                                    tas: inst.tas || ""
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // 如果當天有排課，將不重複的課加入點名直欄
+                if (dayUniqueCourses.length > 0) {
+                    dayUniqueCourses.forEach(uc => {
+                        activePeriods.push({
+                            hasCourse: true,
+                            dayIndex: d,
+                            dateStr: dateStr,
+                            dayName: dayName,
+                            courseId: uc.courseId,
+                            unit: uc.unit,
+                            mainTeacher: uc.mainTeacher,
+                            tas: uc.tas
+                        });
+                    });
+                } else {
+                    // 若當天完全沒課，顯示防呆欄
+                    activePeriods.push({
+                        hasCourse: false,
+                        dayIndex: d,
+                        dateStr: dateStr,
+                        dayName: dayName,
+                        courseId: null,
+                        unit: "（本日無課程）",
                         mainTeacher: "-",
                         tas: ""
                     });
                 }
             }
+
+            // 計算公式列與欄寬
+            const lastColLetter = String.fromCharCode(67 + activePeriods.length);
+            document.getElementById('gs-formula-bar').innerText = `=COUNTA(C4:${lastColLetter}4) // 本週學生實到點名格線統計`;
 
             // A-L 試算表欄位標題行 (模擬 Google Sheet 第一行灰色 A B C D...)
             let colLettersHtml = `
@@ -1692,29 +1746,26 @@
                     <td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-12">A</td>
                     <td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-24">B</td>
             `;
-            const letters = ["C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
-            for (let i = 0; i < 8; i++) {
-                colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold">${letters[i]}</td>`;
+            for (let i = 0; i < activePeriods.length; i++) {
+                colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold">${String.fromCharCode(67 + i)}</td>`;
             }
-            colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-20">K</td></tr>`;
+            colLettersHtml += `<td class="gs-cell-border text-center p-1 text-[10px] bg-[#f1f3f4] font-bold w-20">${lastColLetter}</td></tr>`;
 
             // 試算表第一列、第二列：合併的大標題與中標題 (模擬 Google Sheet 行1、行2)
             let spreadsheetHeaderRows = `
                 <tr>
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">1</td>
-                    <td class="gs-cell-border text-center p-3 font-extrabold text-base tracking-widest text-slate-900 font-sans" colspan="10">
-                        🏫 彰化縣芬園鄉同安國民小學夏日樂學計畫 學生課堂點名簿
+                    <td class="gs-cell-border text-center p-3 font-extrabold text-base tracking-widest text-slate-900 font-sans" colspan="${activePeriods.length + 3}">
+                        🏫 彰化縣芬園鄉同安國民小學夏日樂學計畫 學生課堂點名簿 (整週一覽)
                     </td>
-                    <td class="gs-cell-border"></td>
                 </tr>
                 <tr>
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">2</td>
-                    <td class="gs-cell-border p-2 text-xs text-left pl-4 text-gray-700 bg-emerald-50/40" colspan="10">
+                    <td class="gs-cell-border p-2 text-xs text-left pl-4 text-gray-700 bg-emerald-50/40" colspan="${activePeriods.length + 3}">
                         <span class="font-bold text-emerald-800">班別：</span>${selClass === 'A' ? '甲班' : '乙班'} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                        <span class="font-bold text-emerald-800">日期：</span>${getScheduleDate(d)} (${days[d]}) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-                        <span class="font-bold text-emerald-800">計畫：</span>114年夏日樂學本土語活動方案
+                        <span class="font-bold text-emerald-800">週別日期：</span>第 ${w === 0 ? '一' : '二'} 週 (${getScheduleDate(wStart)} ~ ${getScheduleDate(wStart + 4)}) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                        <span class="font-bold text-emerald-800">核銷計畫：</span>114年夏日樂學本土語活動方案-點名查核專用
                     </td>
-                    <td class="gs-cell-border bg-emerald-50/40"></td>
                 </tr>
             `;
 
@@ -1727,13 +1778,14 @@
             `;
             activePeriods.forEach(ap => {
                 const taText = ap.tas ? `<br><span class="text-[8px] text-emerald-700 font-medium">助:${ap.tas}</span>` : '';
+                const mainTeacherText = ap.mainTeacher !== "-" ? `<span class="text-blue-700 font-semibold">主:${ap.mainTeacher}</span>` : '';
                 periodHeadersHtml += `
                     <td class="gs-cell-border p-1 bg-[#f8f9fa] text-center font-sans">
-                        <div class="font-extrabold text-blue-900 text-[10px] leading-tight">第 ${ap.periodIndex + 1} 節</div>
-                        <div class="text-[9px] text-gray-400 font-mono scale-95 leading-none">${ap.time}</div>
-                        <div class="text-slate-800 font-bold truncate max-w-[90px] my-0.5 text-[10px]" title="${ap.unit}">${ap.unit}</div>
+                        <div class="font-extrabold text-blue-900 text-[10px] leading-tight">${ap.dayName}</div>
+                        <div class="text-[9px] text-gray-400 font-mono scale-95 leading-none">${ap.dateStr}</div>
+                        <div class="text-slate-800 font-bold truncate max-w-[120px] my-0.5 text-[10px]" title="${ap.unit}">${ap.unit}</div>
                         <div class="text-[8px] leading-none text-gray-500 scale-95">
-                            <span class="text-blue-700 font-semibold">主:${ap.mainTeacher}</span>${taText}
+                            ${mainTeacherText}${taText}
                         </div>
                     </td>`;
             });
@@ -1750,7 +1802,7 @@
             displayList.forEach((name, idx) => {
                 let cells = '';
                 activePeriods.forEach((ap) => {
-                    const bgClass = ap.hasCourse ? "bg-white" : "bg-gray-50/50";
+                    const bgClass = ap.hasCourse ? "bg-white" : "bg-gray-100/50";
                     cells += `<td class="gs-cell-border p-1 h-8 ${bgClass} text-center"></td>`;
                 });
                 rowsHtml += `
@@ -1771,13 +1823,13 @@
             rowsHtml += `
                 <tr class="h-10">
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">${bottomRow1}</td>
-                    <td class="gs-cell-border p-2 text-left text-[10px] text-gray-600 bg-gray-50/50 pl-4 font-bold" colspan="11">
+                    <td class="gs-cell-border p-2 text-left text-[10px] text-gray-600 bg-gray-50/50 pl-4 font-bold" colspan="${activePeriods.length + 2}">
                         ✍️ 授課導師/帶班助教簽核：_______________________ (簽章) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 承辦人簽章：_______________________
                     </td>
                 </tr>
                 <tr class="h-10">
                     <td class="gs-cell-border text-center bg-[#f1f3f4] text-[10px] font-bold">${bottomRow2}</td>
-                    <td class="gs-cell-border p-2 text-left text-[10px] text-gray-600 bg-gray-50/50 pl-4 font-bold" colspan="11">
+                    <td class="gs-cell-border p-2 text-left text-[10px] text-gray-600 bg-gray-50/50 pl-4 font-bold" colspan="${activePeriods.length + 2}">
                         🏫 教務主任：_______________________ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 校長簽章：_______________________
                     </td>
                 </tr>
