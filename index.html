@@ -87,12 +87,12 @@
             
             <div class="admin-btn hidden flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 p-1.5 rounded shadow-inner">
                 <span class="text-gray-600 font-bold">📅 第一週(一) 起始日期:</span>
-                <input type="date" id="schedule-start-date" class="border border-gray-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="2025-07-07" onchange="updateScheduleDates(); saveToCloud();">
+                <input type="date" id="schedule-start-date" class="border border-gray-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500" value="2025-07-07" onchange="updateScheduleDates(); saveToCloud(true);">
             </div>
 
             <div class="admin-btn hidden flex items-center gap-1.5 text-xs bg-red-50 border border-red-200 p-1.5 rounded shadow-inner" title="在此輸入停課日期，結算時將自動扣除鐘點費。例如: 7/8, 7/15">
                 <span class="text-red-700 font-bold">☔ 停課日扣除 (不計薪):</span>
-                <input type="text" id="suspend-dates-input" class="border border-red-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-red-500 text-center w-[120px]" placeholder="如: 7/8, 7/15" onchange="updatePayrollUI(); saveToCloud();">
+                <input type="text" id="suspend-dates-input" class="border border-red-300 rounded p-0.5 focus:outline-none focus:ring-1 focus:ring-red-500 text-center w-[120px]" placeholder="如: 7/8, 7/15" onchange="updatePayrollUI(); saveToCloud(true);">
             </div>
         </div>
         <div class="flex gap-2">
@@ -279,10 +279,11 @@
                 <button id="tab-payroll-summary" onclick="switchPayrollTab('summary')" class="py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600">📊 全員彙整統計總清單</button>
             </div>
 
+            <!-- 🌟 新增各設定欄位的自動存檔觸發 (onchange) -->
             <div class="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100 grid grid-cols-4 gap-3 text-xs mb-3 shrink-0">
                 <div class="col-span-2">
                     <label class="block font-bold text-gray-700 mb-1">工作計畫名稱</label>
-                    <input type="text" id="payroll-project-name" class="w-full border border-gray-300 rounded p-1" value="114年夏日樂學計畫方案-本土語文活動課程" oninput="updatePayrollUI()">
+                    <input type="text" id="payroll-project-name" class="w-full border border-gray-300 rounded p-1" value="114年夏日樂學計畫方案-本土語文活動課程" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
                 <div>
                     <label class="block font-bold text-indigo-900 mb-1">統計班別</label>
@@ -293,24 +294,24 @@
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">班別註記</label>
-                    <input type="text" id="payroll-class-note" class="w-full border border-gray-300 rounded p-1" value="甲班" oninput="updatePayrollUI()">
+                    <input type="text" id="payroll-class-note" class="w-full border border-gray-300 rounded p-1" value="甲班" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
                 
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">年度 (民國)</label>
-                    <input type="number" id="payroll-year" class="w-full border border-gray-300 rounded p-1" value="114" oninput="updatePayrollUI()">
+                    <input type="number" id="payroll-year" class="w-full border border-gray-300 rounded p-1" value="114" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">主教單價 (元/節)</label>
-                    <input type="number" id="payroll-main-rate" class="w-full border border-gray-300 rounded p-1" value="400" oninput="updatePayrollUI()">
+                    <input type="number" id="payroll-main-rate" class="w-full border border-gray-300 rounded p-1" value="400" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">助教單價 (元/節)</label>
-                    <input type="number" id="payroll-ta-rate" class="w-full border border-gray-300 rounded p-1" value="200" oninput="updatePayrollUI()">
+                    <input type="number" id="payroll-ta-rate" class="w-full border border-gray-300 rounded p-1" value="200" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">用途摘要</label>
-                    <input type="text" id="payroll-abstract" class="w-full border border-gray-300 rounded p-1" value="內聘講師鐘點費" oninput="updatePayrollUI()">
+                    <input type="text" id="payroll-abstract" class="w-full border border-gray-300 rounded p-1" value="內聘講師鐘點費" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
 
                 <div>
@@ -334,7 +335,7 @@
                 
                 <div class="flex items-center gap-4 col-span-4 pt-1 border-t border-indigo-100">
                     <label class="flex items-center gap-1 font-bold text-gray-700 cursor-pointer">
-                        <input type="checkbox" id="payroll-is-internal" checked onchange="updatePayrollUI()">
+                        <input type="checkbox" id="payroll-is-internal" checked onchange="updatePayrollUI(); saveToCloud(true);">
                         講師為本機關投保人員 (內聘免扣補充保費)
                     </label>
                 </div>
@@ -414,7 +415,7 @@
         </div>
     </div>
 
-    <!-- 雙擊微調「課表上單堂實例」師 আলোচন Modal -->
+    <!-- 雙擊微調「課表上單堂實例」師資 Modal -->
     <div id="edit-instance-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-5 w-[380px] shadow-xl">
             <h2 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2 flex justify-between items-center">
@@ -1379,7 +1380,11 @@
 
         function onPayrollClassChange() {
             const classSelect = document.getElementById('payroll-class-select').value;
-            document.getElementById('payroll-class-note').value = classSelect === 'A' ? '甲班' : '乙班';
+            // 優化：只有在未設定或預設時，才自動覆蓋班別註記，保留使用者自訂名稱
+            const currentNote = document.getElementById('payroll-class-note').value;
+            if (currentNote === '甲班' || currentNote === '乙班') {
+                document.getElementById('payroll-class-note').value = classSelect === 'A' ? '甲班' : '乙班';
+            }
             
             const select = document.getElementById('payroll-teacher-select');
             select.innerHTML = '';
@@ -1394,6 +1399,7 @@
                 onPayrollTeacherChange();
             }
             updatePayrollUI();
+            saveToCloud(true); // 🌟 切換班別自動存檔
         }
 
         function onPayrollTeacherChange() {
@@ -1981,7 +1987,18 @@
                 teacherMetadata: teacherMetadata, gasUrl: document.getElementById('payroll-gas-url')?.value,
                 startDate: document.getElementById('schedule-start-date')?.value || "2025-07-07",
                 suspendedDates: document.getElementById('suspend-dates-input')?.value || "",
-                studentsA: studentsA, studentsB: studentsB
+                studentsA: studentsA, studentsB: studentsB,
+                
+                // 🌟 新增：將印領清冊的設定狀態全部加入存檔記憶
+                payrollConfig: {
+                    projectName: document.getElementById('payroll-project-name')?.value || "114年夏日樂學計畫方案-本土語文活動課程",
+                    classNote: document.getElementById('payroll-class-note')?.value || "甲班",
+                    year: document.getElementById('payroll-year')?.value || "114",
+                    mainRate: document.getElementById('payroll-main-rate')?.value || "400",
+                    taRate: document.getElementById('payroll-ta-rate')?.value || "200",
+                    abstract: document.getElementById('payroll-abstract')?.value || "內聘講師鐘點費",
+                    isInternal: document.getElementById('payroll-is-internal')?.checked !== false
+                }
             };
         };
 
@@ -1999,6 +2016,18 @@
             if(state.gasUrl) document.getElementById('payroll-gas-url').value = state.gasUrl;
             if(state.startDate) document.getElementById('schedule-start-date').value = state.startDate;
             if(state.suspendedDates) document.getElementById('suspend-dates-input').value = state.suspendedDates;
+            
+            // 🌟 載入：還原印領清冊設定值
+            if (state.payrollConfig) {
+                if(document.getElementById('payroll-project-name')) document.getElementById('payroll-project-name').value = state.payrollConfig.projectName;
+                if(document.getElementById('payroll-class-note')) document.getElementById('payroll-class-note').value = state.payrollConfig.classNote;
+                if(document.getElementById('payroll-year')) document.getElementById('payroll-year').value = state.payrollConfig.year;
+                if(document.getElementById('payroll-main-rate')) document.getElementById('payroll-main-rate').value = state.payrollConfig.mainRate;
+                if(document.getElementById('payroll-ta-rate')) document.getElementById('payroll-ta-rate').value = state.payrollConfig.taRate;
+                if(document.getElementById('payroll-abstract')) document.getElementById('payroll-abstract').value = state.payrollConfig.abstract;
+                if(document.getElementById('payroll-is-internal')) document.getElementById('payroll-is-internal').checked = state.payrollConfig.isInternal;
+            }
+
             updateScheduleDates();
 
             Object.values(coursePool).forEach(c => { if(!c.color) c.color = getNextColor(); });
