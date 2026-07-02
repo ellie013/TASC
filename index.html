@@ -414,7 +414,7 @@
         </div>
     </div>
 
-    <!-- 雙擊微調「課表上單堂實例」師資 Modal -->
+    <!-- 雙擊微調「課表上單堂實例」師 আলোচন Modal -->
     <div id="edit-instance-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-5 w-[380px] shadow-xl">
             <h2 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2 flex justify-between items-center">
@@ -2027,21 +2027,29 @@
             checkAllConflicts(); applyHighlights();
         };
 
-        // 🌟 升級版 saveToCloud：加入靜默模式，不亂跳通知干擾
+        // 🌟 升級版 saveToCloud：加入靜默模式，不亂跳通知干擾，並修復 Firestore 不支援二維陣列的問題
         function saveToCloud(isSilent = false) {
             if (!isAdmin) return;
-            const state = serializeState();
+            const rawState = serializeState();
             if (db) {
                 if (!isSilent) showToast("📡 正在同步資料至 Google 雲端...", "info");
-                db.collection("schedules").doc("master_data").set(state).then(() => {
+                
+                const securePayload = {
+                    encodedData: JSON.stringify(rawState),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                db.collection("schedules").doc("master_data_v2").set(securePayload)
+                .then(() => {
                     if (!isSilent) showToast("☁️ 課表與學生名單已成功安全同步至雲端！", "success");
                 })
                 .catch((e) => {
+                    console.error("雲端存檔錯誤: ", e);
                     if (!isSilent) showToast("❌ 雲端儲存失敗，請檢查 Firebase 設定", "error");
                 });
             } else {
                 try {
-                    localStorage.setItem('pro_schedule_state', JSON.stringify(state));
+                    localStorage.setItem('pro_schedule_state', JSON.stringify(rawState));
                     if (!isSilent) showToast("💾 資料已儲存至您電腦的本機空間！(未配置 Firebase 金鑰)", "success");
                 } catch(e) {}
             }
@@ -2050,10 +2058,26 @@
         function loadFromCloud() {
             if (db) {
                 showToast("📡 正在從雲端載入最新進度...", "info");
-                db.collection("schedules").doc("master_data").get().then((doc) => {
-                    if (doc.exists) { deserializeState(doc.data()); showToast("☁️ 成功載入雲端即時課表資料！", "success"); }
-                    else { loadFromLocal(); }
-                }).catch(() => loadFromLocal());
+                db.collection("schedules").doc("master_data_v2").get().then((doc) => {
+                    if (doc.exists && doc.data().encodedData) {
+                        const decodedState = JSON.parse(doc.data().encodedData);
+                        deserializeState(decodedState);
+                        showToast("☁️ 成功載入雲端即時課表資料！", "success");
+                    } else {
+                        // 嘗試載入舊版 master_data 備份
+                        db.collection("schedules").doc("master_data").get().then((oldDoc) => {
+                            if (oldDoc.exists) {
+                                deserializeState(oldDoc.data());
+                                showToast("☁️ 成功載入舊版雲端備份", "success");
+                            } else {
+                                loadFromLocal();
+                            }
+                        }).catch(() => loadFromLocal());
+                    }
+                }).catch((e) => {
+                    console.error(e);
+                    loadFromLocal();
+                });
             } else { loadFromLocal(); }
         }
 
