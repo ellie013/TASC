@@ -329,7 +329,7 @@
                 
                 <div class="col-span-4 bg-yellow-50 p-2 rounded border border-yellow-200">
                     <label class="block font-bold text-yellow-800 mb-1">🔗 Google Apps Script 網址 (部署 Web App 後取得的 URL)</label>
-                    <input type="text" id="payroll-gas-url" class="w-full border border-yellow-300 rounded p-1 text-xs" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveToCloud()">
+                    <input type="text" id="payroll-gas-url" class="w-full border border-yellow-300 rounded p-1 text-xs" placeholder="https://script.google.com/macros/s/.../exec" onchange="saveToCloud(true)">
                 </div>
                 
                 <div class="flex items-center gap-4 col-span-4 pt-1 border-t border-indigo-100">
@@ -902,6 +902,7 @@
                     updateStateArray(targetClass, day, period, movingData);
                 }
                 checkAllConflicts(); applyHighlights();
+                saveToCloud(true); // 🌟 拖曳後自動背景靜默存檔
             } catch(e) { console.error(e); }
         }
 
@@ -912,6 +913,7 @@
             instEl.remove();
             clearSourceDataRecord(cellId);
             renderPool(); checkAllConflicts();
+            saveToCloud(true); // 🌟 退回課程庫後自動背景靜默存檔
         }
         function clearDragOver() { document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); }
         function clearSourceDataRecord(cellId) {
@@ -1127,11 +1129,9 @@
             }
             
             renderStudentAttendancePreview();
-            if (isAdmin) saveToCloud();
-            else {
-                localStorage.setItem('pro_schedule_state', JSON.stringify(serializeState()));
-                showToast("💾 學生名單已暫存至您的本機！", "success");
-            }
+            // 🌟 編輯學生名單自動存檔
+            saveToCloud(true); 
+            showToast("💾 學生名單已自動儲存至雲端！", "success");
         }
 
         function openStudentAttendanceModal() {
@@ -1418,7 +1418,7 @@
             teacherMetadata[teacherName].address = document.getElementById('payroll-teacher-address').value.trim();
             
             updatePayrollUI();
-            saveToCloud(); 
+            saveToCloud(true); // 🌟 輸入老師資訊後自動靜默存檔
         }
 
         function generatePayrollData() {
@@ -1865,7 +1865,8 @@
             if (highlightMode === 'course' && highlightTarget === id) { highlightMode = null; highlightTarget = null; }
             delete coursePool[id];
             renderPool(); checkAllConflicts(); closeDeleteCourseModal(); closeModal(); 
-            showToast('課程已徹底刪除', 'success');
+            saveToCloud(true); // 🌟 刪除後自動靜默存檔
+            showToast('課程已徹底刪除並同步儲存', 'success');
         }
 
         function promptClearPool() {
@@ -1888,7 +1889,8 @@
             if (highlightMode === 'course' && idsToDelete.includes(highlightTarget)) { highlightMode = null; highlightTarget = null; }
             idsToDelete.forEach(id => delete coursePool[id]);
             renderPool(); checkAllConflicts(); closeClearPoolModal();
-            showToast(`已清空 ${currentViewClass === 'A' ? '甲班' : '乙班'} 的課程庫`, 'success');
+            saveToCloud(true); // 🌟 清空後自動靜默存檔
+            showToast(`已清空 ${currentViewClass === 'A' ? '甲班' : '乙班'} 的課程庫並同步`, 'success');
         }
 
         function saveCourseEdit() {
@@ -1914,7 +1916,8 @@
             };
             updateSched(scheduleA, 'A'); updateSched(scheduleB, 'B');
             renderPool(); checkAllConflicts(); closeModal();
-            showToast('課程預設內容已更新！已排定的課堂已完成同步。', 'success');
+            saveToCloud(true); // 🌟 編輯後自動靜默存檔
+            showToast('課程與師資已更新並自動同步儲存！', 'success');
         }
 
         function openInstanceEditModal(cellId) {
@@ -1939,7 +1942,8 @@
                 const cell = document.getElementById(`cell-${classId}-${day}-${period}`);
                 cell.innerHTML = ''; cell.appendChild(createInstanceCard(inst));
                 checkAllConflicts(); renderPool(); closeInstanceModal();
-                showToast('已成功客製微調該單堂師資！', 'success');
+                saveToCloud(true); // 🌟 編輯後自動靜默存檔
+                showToast('單堂師資已微調並自動同步儲存！', 'success');
             }
         }
 
@@ -1966,7 +1970,8 @@
                 importCount++;
             });
             renderPool(); closeImportModal();
-            if (importCount > 0) showToast(`成功匯入 ${importCount} 個課程主題！`, 'success');
+            saveToCloud(true); // 🌟 匯入後自動靜默存檔
+            if (importCount > 0) showToast(`成功匯入 ${importCount} 個課程主題並同步儲存！`, 'success');
         }
 
         // --- 存檔與還原的核心中樞 ---
@@ -2022,17 +2027,22 @@
             checkAllConflicts(); applyHighlights();
         };
 
-        function saveToCloud() {
+        // 🌟 升級版 saveToCloud：加入靜默模式，不亂跳通知干擾
+        function saveToCloud(isSilent = false) {
             if (!isAdmin) return;
             const state = serializeState();
             if (db) {
-                showToast("📡 正在同步資料至 Google 雲端...", "info");
-                db.collection("schedules").doc("master_data").set(state).then(() => showToast("☁️ 課表與學生名單已成功安全同步至雲端！", "success"))
-                .catch((e) => showToast("❌ 雲端儲存失敗，請檢查 Firebase 設定", "error"));
+                if (!isSilent) showToast("📡 正在同步資料至 Google 雲端...", "info");
+                db.collection("schedules").doc("master_data").set(state).then(() => {
+                    if (!isSilent) showToast("☁️ 課表與學生名單已成功安全同步至雲端！", "success");
+                })
+                .catch((e) => {
+                    if (!isSilent) showToast("❌ 雲端儲存失敗，請檢查 Firebase 設定", "error");
+                });
             } else {
                 try {
                     localStorage.setItem('pro_schedule_state', JSON.stringify(state));
-                    showToast("💾 資料已儲存至您電腦的本機空間！(未配置 Firebase 金鑰)", "success");
+                    if (!isSilent) showToast("💾 資料已儲存至您電腦的本機空間！(未配置 Firebase 金鑰)", "success");
                 } catch(e) {}
             }
         }
@@ -2075,6 +2085,7 @@
             for (let id in coursePool) coursePool[id].remaining = coursePool[id].total;
             highlightMode = null; highlightTarget = null;
             renderPool(); checkAllConflicts(); showToast('課表已全數退回課程庫。', 'info');
+            saveToCloud(true); // 🌟 重設後自動靜默存檔
         }
 
         // ==========================================
