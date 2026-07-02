@@ -1961,7 +1961,8 @@
             if(state.suspendedDates) document.getElementById('suspend-dates-input').value = state.suspendedDates;
             updateScheduleDates();
 
-            initializeColors(); highlightMode = null; highlightTarget = null;
+            Object.values(coursePool).forEach(c => { if(!c.color) c.color = getNextColor(); });
+            highlightMode = null; highlightTarget = null;
             renderPool();
             
             const loadData = (stateSched, localSched, classId) => {
@@ -2040,6 +2041,17 @@
             highlightMode = null; highlightTarget = null;
             renderPool(); checkAllConflicts(); showToast('課表已全數退回課程庫。', 'info');
         }
+
+        // ==========================================
+        // 🚀 系統啟動與初始化
+        // ==========================================
+        renderTable('A', 0);
+        renderTable('A', 1);
+        renderTable('B', 0);
+        renderTable('B', 1);
+        
+        checkPermissionsAndInitFirebase();
+
     </script>
 </body>
 </html>
