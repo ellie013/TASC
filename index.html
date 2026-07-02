@@ -279,7 +279,7 @@
                 <button id="tab-payroll-summary" onclick="switchPayrollTab('summary')" class="py-2 px-6 font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600">📊 全員彙整統計總清單</button>
             </div>
 
-            <!-- 🌟 新增各設定欄位的自動存檔觸發 (onchange) -->
+            <!-- 🌟 各設定欄位 (含新增的公文依據區塊) -->
             <div class="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100 grid grid-cols-4 gap-3 text-xs mb-3 shrink-0">
                 <div class="col-span-2">
                     <label class="block font-bold text-gray-700 mb-1">工作計畫名稱</label>
@@ -297,6 +297,22 @@
                     <input type="text" id="payroll-class-note" class="w-full border border-gray-300 rounded p-1" value="甲班" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
                 </div>
                 
+                <!-- 🌟 新增：公文依據設定區塊 (自動判斷留白) -->
+                <div class="col-span-4 flex flex-wrap items-center gap-1.5 bg-white/60 p-2 rounded border border-indigo-100 mt-0.5">
+                    <label class="font-bold text-gray-700 mr-1 text-indigo-900">依據公文：</label>
+                    <input type="text" id="payroll-doc-agency" class="border border-gray-300 rounded p-1 w-28 text-center" value="彰化縣政府" placeholder="機關" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
+                    <input type="text" id="payroll-doc-year" class="border border-gray-300 rounded p-1 w-14 text-center" value="114" placeholder="年" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
+                    <span class="text-gray-600 font-bold">年</span>
+                    <input type="text" id="payroll-doc-month" class="border border-gray-300 rounded p-1 w-10 text-center" value="5" placeholder="月" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
+                    <span class="text-gray-600 font-bold">月</span>
+                    <input type="text" id="payroll-doc-day" class="border border-gray-300 rounded p-1 w-10 text-center" value="15" placeholder="日" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
+                    <span class="text-gray-600 font-bold">日 府</span>
+                    <input type="text" id="payroll-doc-word" class="border border-gray-300 rounded p-1 w-14 text-center" value="教社" placeholder="字" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
+                    <span class="text-gray-600 font-bold">字第</span>
+                    <input type="text" id="payroll-doc-number" class="border border-gray-300 rounded p-1 w-32 text-center" value="1140182600" placeholder="文號" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
+                    <span class="text-gray-600 font-bold">號函辦理</span>
+                </div>
+
                 <div>
                     <label class="block font-bold text-gray-700 mb-1">年度 (民國)</label>
                     <input type="number" id="payroll-year" class="w-full border border-gray-300 rounded p-1" value="114" oninput="updatePayrollUI()" onchange="saveToCloud(true)">
@@ -1480,6 +1496,13 @@
             const rYear = document.getElementById('payroll-year').value;
             const projectName = document.getElementById('payroll-project-name').value;
             
+            const docAgency = document.getElementById('payroll-doc-agency').value.trim() || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+            const docYear = document.getElementById('payroll-doc-year').value.trim() || '&nbsp;&nbsp;&nbsp;&nbsp;';
+            const docMonth = document.getElementById('payroll-doc-month').value.trim() || '&nbsp;&nbsp;&nbsp;&nbsp;';
+            const docDay = document.getElementById('payroll-doc-day').value.trim() || '&nbsp;&nbsp;&nbsp;&nbsp;';
+            const docWord = document.getElementById('payroll-doc-word').value.trim() || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+            const docNumber = document.getElementById('payroll-doc-number').value.trim() || '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+
             let mainExpl = "";
             if (data.main.periods > 0) {
                 let datesMain = formatDatesChinese(data.main.days);
@@ -1494,7 +1517,7 @@
                 taExpl = `聘請講師 <strong>${teacherName}</strong> 擔任<strong>助教老師</strong>，授課時間 <strong>${rYear}年${datesTA}</strong>，共計 <strong>${data.ta.periods}</strong> 節，每節 ${taRate} 元，共計新台幣 ${taTotal} 元整。`;
             }
             
-            let html = `<div class="mt-2 text-[11px] text-black leading-relaxed text-left font-sans print:mt-1"><div class="font-bold mb-1">說明事項：</div><ol class="list-decimal pl-4 space-y-1"><li>本案依據彰化縣政府 <strong>${rYear}年5月15日府教社字第${rYear}0182600號函</strong> 辦理。</li>`;
+            let html = `<div class="mt-2 text-[11px] text-black leading-relaxed text-left font-sans print:mt-1"><div class="font-bold mb-1">說明事項：</div><ol class="list-decimal pl-4 space-y-1"><li>本案依據${docAgency} <strong>${docYear}</strong> 年 <strong>${docMonth}</strong> 月 <strong>${docDay}</strong> 日府<strong>${docWord}</strong>字第 <strong>${docNumber}</strong> 號函辦理。</li>`;
             if (mainExpl) html += `<li>${mainExpl}</li>`;
             if (taExpl) html += `<li>${taExpl}</li>`;
             
@@ -1997,7 +2020,13 @@
                     mainRate: document.getElementById('payroll-main-rate')?.value || "400",
                     taRate: document.getElementById('payroll-ta-rate')?.value || "200",
                     abstract: document.getElementById('payroll-abstract')?.value || "內聘講師鐘點費",
-                    isInternal: document.getElementById('payroll-is-internal')?.checked !== false
+                    isInternal: document.getElementById('payroll-is-internal')?.checked !== false,
+                    docAgency: document.getElementById('payroll-doc-agency')?.value || "",
+                    docYear: document.getElementById('payroll-doc-year')?.value || "",
+                    docMonth: document.getElementById('payroll-doc-month')?.value || "",
+                    docDay: document.getElementById('payroll-doc-day')?.value || "",
+                    docWord: document.getElementById('payroll-doc-word')?.value || "",
+                    docNumber: document.getElementById('payroll-doc-number')?.value || ""
                 }
             };
         };
@@ -2026,6 +2055,13 @@
                 if(document.getElementById('payroll-ta-rate')) document.getElementById('payroll-ta-rate').value = state.payrollConfig.taRate;
                 if(document.getElementById('payroll-abstract')) document.getElementById('payroll-abstract').value = state.payrollConfig.abstract;
                 if(document.getElementById('payroll-is-internal')) document.getElementById('payroll-is-internal').checked = state.payrollConfig.isInternal;
+                
+                if(document.getElementById('payroll-doc-agency')) document.getElementById('payroll-doc-agency').value = state.payrollConfig.docAgency ?? "彰化縣政府";
+                if(document.getElementById('payroll-doc-year')) document.getElementById('payroll-doc-year').value = state.payrollConfig.docYear ?? "114";
+                if(document.getElementById('payroll-doc-month')) document.getElementById('payroll-doc-month').value = state.payrollConfig.docMonth ?? "5";
+                if(document.getElementById('payroll-doc-day')) document.getElementById('payroll-doc-day').value = state.payrollConfig.docDay ?? "15";
+                if(document.getElementById('payroll-doc-word')) document.getElementById('payroll-doc-word').value = state.payrollConfig.docWord ?? "教社";
+                if(document.getElementById('payroll-doc-number')) document.getElementById('payroll-doc-number').value = state.payrollConfig.docNumber ?? "1140182600";
             }
 
             updateScheduleDates();
