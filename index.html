@@ -1664,12 +1664,17 @@
             const rYear = document.getElementById('payroll-year').value;
             const isInternal = document.getElementById('payroll-is-internal').checked;
 
+            // --- 計算保費 ---
             const baseAmount = (data.main.periods * mainRate) + (data.ta.periods * taRate);
             const employerNHI = Math.round(baseAmount * 0.0211);
             const employeeNHI = (!isInternal && baseAmount >= 20000) ? Math.round(baseAmount * 0.02) : 0;
             const netAmount = baseAmount - employeeNHI;
 
-            // 產生給 GAS 的文字字串
+            // --- 產生給 GAS 的文字字串 (補回遺失的變數) ---
+            const projectName = document.getElementById('payroll-project-name').value;
+            const classNote = document.getElementById('payroll-class-note').value;
+            const abstractText = document.getElementById('payroll-abstract').value;
+
             const docAgency = document.getElementById('payroll-doc-agency').value.trim() || '　　　　';
             const docYear = document.getElementById('payroll-doc-year').value.trim() || '　　';
             const docMonth = document.getElementById('payroll-doc-month').value.trim() || '　　';
@@ -1681,7 +1686,7 @@
             let allDatesStr = formatDatesChinese(datesAllSet);
             let totalPeriods = data.main.periods + data.ta.periods;
 
-            let explanationText = `說明事項：\n1. 本案依據${docAgency} ${docYear} 年 ${docMonth} 月 ${docDay} 日府${docWord}字第 ${docNumber} 號函辦理。\n2. 本校辦理「${document.getElementById('payroll-project-name').value}」，聘請講師 ${teacher} 擔任課程老師。\n3. 授課時間為民國 ${rYear} 年 ${allDatesStr}，累計授課 ${totalPeriods} 節。\n4. 全案共計應付講師鐘點費新台幣 ${baseAmount} 元整，依法代扣補充保費自付額 2% 計 ${employeeNHI} 元，實領 ${netAmount} 元；機關負擔補充保費 2.11% 計 ${employerNHI} 元，合計動用新台幣 ${baseAmount + employerNHI} 元。`;
+            let explanationText = `說明事項：\n1. 本案依據${docAgency} ${docYear} 年 ${docMonth} 月 ${docDay} 日府${docWord}字第 ${docNumber} 號函辦理。\n2. 本校辦理「${projectName}」，聘請講師 ${teacher} 擔任課程老師。\n3. 授課時間為民國 ${rYear} 年 ${allDatesStr}，累計授課 ${totalPeriods} 節。\n4. 全案共計應付講師鐘點費新台幣 ${baseAmount} 元整，依法代扣補充保費自付額 2% 計 ${employeeNHI} 元，實領 ${netAmount} 元；機關負擔補充保費 2.11% 計 ${employerNHI} 元，合計動用新台幣 ${baseAmount + employerNHI} 元。`;
 
             let c14Details = [];
             if (data.main.periods > 0) c14Details.push(`${formatDatesChinese(data.main.days)} ${Array.from(data.main.units).join('、')} (主教) ${data.main.periods}節`);
@@ -1690,11 +1695,17 @@
 
             const payload = {
                 teacherName: teacher,
-                teacherId: meta.id,
-                teacherAddress: meta.address,
-                projectName: document.getElementById('payroll-project-name').value, 
-                classNote: document.getElementById('payroll-class-note').value, 
+                teacherId: meta.id,                  // 🌟 補回遺失的身分證字號
+                teacherAddress: meta.address,        // 🌟 補回遺失的地址
+                projectName: projectName,            // 🌟 補回遺失的計畫名稱
+                classNote: classNote,                // 🌟 補回遺失的班別 (用於分頁命名)
                 year: rYear,
+                abstract: abstractText,
+                mainPeriods: data.main.periods, 
+                mainRate: mainRate,
+                taPeriods: data.ta.periods, 
+                taRate: taRate,
+                c14Text: c14Text,
                 explanationText: explanationText,
                 employerNHI: employerNHI,
                 employeeNHI: employeeNHI
