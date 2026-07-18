@@ -568,6 +568,7 @@
       messagingSenderId: "829044730170",
       appId: "1:829044730170:web:0d5c864d9b90340d200803"
         };
+
         let db = null;
         let isAdmin = false;
 
@@ -1786,7 +1787,7 @@
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
             fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("🎉 印領清冊已建立！請到 Google 雲端硬碟「My Drive」搜尋「" + teacher + "」", "success"); })
+            .then(() => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("🎉 印領清冊已建立！請到雲端硬碟搜尋「" + projectName + "-" + classNote + "」資料夾", "success"); })
             .catch(err => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請確認網址是否正確", "error"); });
         }
 
@@ -1901,7 +1902,7 @@
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
             fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到 Google 雲端硬碟「My Drive」搜尋「" + document.getElementById('purchase-class').value + "」", "success"); })
+            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到雲端硬碟搜尋「" + document.getElementById('purchase-project-name').value + "-" + document.getElementById('purchase-class').value + "」資料夾", "success"); })
             .catch(err => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請檢查網址", "error"); });
         }
 
@@ -2272,7 +2273,7 @@
         function resetSchedule() { if (!isAdmin) return; document.getElementById('reset-modal').classList.remove('hidden'); }
         function closeResetModal() { document.getElementById('reset-modal').classList.add('hidden'); }
         function executeReset() {
-            if (!isAdmin) return;
+            if (!isAdmin) return; 
             closeResetModal();
             document.querySelectorAll('td.droppable').forEach(td => td.innerHTML = '');
             for(let d=0; d<10; d++) for(let p=0; p<8; p++) { scheduleA[d][p] = null; scheduleB[d][p] = null; }
