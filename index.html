@@ -302,6 +302,19 @@
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none print:hidden"></div>
 
     <script>
+        // ==========================================
+        // ⚙️ Firebase 雲端資料庫設定區 (請在此貼上您的設定)
+        // ==========================================
+          const myFirebaseConfig = {
+      apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
+      authDomain: "tasc-schedule.firebaseapp.com",
+      projectId: "tasc-schedule",
+      storageBucket: "tasc-schedule.firebasestorage.app",
+      messagingSenderId: "829044730170",
+      appId: "1:829044730170:web:0d5c864d9b90340d200803"
+        };
+        // ==========================================
+
         let isAdmin = true;
         let scheduleA = Array.from({length: 10}, () => Array(8).fill(null));
         let scheduleB = Array.from({length: 10}, () => Array(8).fill(null));
@@ -351,8 +364,15 @@
         // --- Firebase Cloud Integration 雲端資料庫模組 ---
         let db, auth, user, app;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-schedule-app';
-        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-        const firebaseConfig = JSON.parse(firebaseConfigStr);
+        
+        // 自動判斷：優先使用系統環境變數，若無則使用上方您填寫的 myFirebaseConfig
+        let firebaseConfig = {};
+        if (typeof __firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(__firebase_config); } catch(e) {}
+        }
+        if (Object.keys(firebaseConfig).length === 0 && Object.keys(myFirebaseConfig).length > 0) {
+            firebaseConfig = myFirebaseConfig;
+        }
 
         async function initFirebase() {
             const roleBadge = document.getElementById('role-badge');
@@ -391,8 +411,20 @@
         }
 
         window.saveToCloud = async function(silent = false) {
+            const dataToSave = {
+                scheduleA: JSON.stringify(scheduleA),
+                scheduleB: JSON.stringify(scheduleB),
+                teacherMetadata: JSON.stringify(teacherMetadata),
+                startDate: document.getElementById('schedule-start-date').value,
+                suspendDates: document.getElementById('suspend-dates-input').value,
+                gasUrl: document.getElementById('payroll-gas-url') ? document.getElementById('payroll-gas-url').value : '',
+                timestamp: new Date().toISOString()
+            };
+
             if (!user || !db) {
-                if (!silent) showToast("⚠️ 未連接雲端，僅單機保存", "warning");
+                // 單機模式：存入瀏覽器 localStorage
+                localStorage.setItem('scheduleAppData_local', JSON.stringify(dataToSave));
+                if (!silent) showToast("💾 未連接雲端，已將進度保存在您的瀏覽器中", "warning");
                 return;
             }
             try {
@@ -431,7 +463,32 @@
 
         window.loadFromCloud = async function() {
             if (!user || !db) {
-                showToast("⚠️ 未連接雲端，無法載入資料", "warning");
+                // 單機模式：嘗試從瀏覽器 localStorage 讀取
+                const localData = localStorage.getItem('scheduleAppData_local');
+                if (localData) {
+                    try {
+                        const data = JSON.parse(localData);
+                        if(data.scheduleA) scheduleA = JSON.parse(data.scheduleA);
+                        if(data.scheduleB) scheduleB = JSON.parse(data.scheduleB);
+                        if(data.teacherMetadata) teacherMetadata = JSON.parse(data.teacherMetadata);
+                        if(data.startDate) document.getElementById('schedule-start-date').value = data.startDate;
+                        if(data.suspendDates) document.getElementById('suspend-dates-input').value = data.suspendDates;
+                        if(data.gasUrl && document.getElementById('payroll-gas-url')) document.getElementById('payroll-gas-url').value = data.gasUrl;
+                        
+                        showToast("📂 已從瀏覽器載入上次的本機暫存", "info");
+                        
+                        // 呼叫 UI 更新渲染函數
+                        if(typeof updateScheduleDates === 'function') updateScheduleDates();
+                        if(typeof renderTable === 'function') {
+                            renderTable('A', 1); renderTable('A', 2);
+                            renderTable('B', 1); renderTable('B', 2);
+                        }
+                    } catch(e) {
+                        console.error("Local storage load error:", e);
+                    }
+                } else {
+                    showToast("⚠️ 未連接雲端，且本機無暫存資料", "warning");
+                }
                 return;
             }
             try {
