@@ -472,6 +472,22 @@
                     <label class="block font-bold text-gray-700 mb-1">用途摘要</label>
                     <input type="text" id="purchase-abstract" class="w-full border border-gray-300 rounded p-1.5" value="夏日樂學材料費">
                 </div>
+                <div class="col-span-6 bg-white p-3 rounded border border-orange-200 mt-2 shadow-inner">
+                    <label class="font-bold text-gray-700 mr-1 text-orange-800 text-sm">依據公文：</label>
+                    <input type="text" id="purchase-doc-agency" class="border border-gray-300 rounded p-1 w-28 text-center text-sm" value="彰化縣政府" placeholder="(機關)">
+                    <span class="font-bold text-gray-600 text-sm mx-1">於</span>
+                    <input type="text" id="purchase-doc-year" class="border border-gray-300 rounded p-1 w-14 text-center text-sm" value="114" placeholder="(年)">
+                    <span class="font-bold text-gray-600 text-sm mx-1">年</span>
+                    <input type="text" id="purchase-doc-month" class="border border-gray-300 rounded p-1 w-10 text-center text-sm" placeholder="(月)">
+                    <span class="font-bold text-gray-600 text-sm mx-1">月</span>
+                    <input type="text" id="purchase-doc-day" class="border border-gray-300 rounded p-1 w-10 text-center text-sm" placeholder="(日)">
+                    <span class="font-bold text-gray-600 text-sm mx-1">日</span>
+                    <span class="font-bold text-gray-600 text-sm">府</span>
+                    <input type="text" id="purchase-doc-word" class="border border-gray-300 rounded p-1 w-14 text-center text-sm" placeholder="(字)">
+                    <span class="font-bold text-gray-600 text-sm mx-1">字第</span>
+                    <input type="text" id="purchase-doc-number" class="border border-gray-300 rounded p-1 w-32 text-center text-sm" placeholder="(文號)">
+                    <span class="font-bold text-gray-600 text-sm mx-1">號函辦理</span>
+                </div>
                 
                 <div class="col-span-6 bg-white p-3 rounded border border-orange-200 mt-2 shadow-inner">
                     <div class="flex justify-between items-center mb-2">
@@ -1787,7 +1803,7 @@
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
             fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("🎉 印領清冊已建立！請到 Google 雲端硬碟 My Drive 搜尋「" + classNote + "-" + teacher + "」", "success"); })
+            .then(() => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("🎉 印領清冊已建立！請到雲端硬碟 My Drive 搜尋「" + projectName + "-" + classNote + "」資料夾", "success"); })
             .catch(err => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請確認網址是否正確", "error"); });
         }
 
@@ -1895,6 +1911,12 @@
                 classNote: document.getElementById('purchase-class').value,
                 abstract: document.getElementById('purchase-abstract').value,
                 payerName: document.getElementById('purchase-payer').value.trim(),
+                docAgency: document.getElementById('purchase-doc-agency').value.trim() || '',
+                docYear: document.getElementById('purchase-doc-year').value.trim() || '',
+                docMonth: document.getElementById('purchase-doc-month').value.trim() || '',
+                docDay: document.getElementById('purchase-doc-day').value.trim() || '',
+                docWord: document.getElementById('purchase-doc-word').value.trim() || '',
+                docNumber: document.getElementById('purchase-doc-number').value.trim() || '',
                 items: items
             };
 
@@ -1902,7 +1924,7 @@
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
             fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到 Google 雲端硬碟 My Drive 搜尋「" + document.getElementById('purchase-class').value + "-" + document.getElementById('purchase-payer').value.trim() + "」", "success"); })
+            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到雲端硬碟 My Drive 搜尋「" + document.getElementById('purchase-project-name').value + "-" + document.getElementById('purchase-class').value + "」資料夾", "success"); })
             .catch(err => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請檢查網址", "error"); });
         }
 
