@@ -438,8 +438,8 @@
             </div>
         </div>
     </div>
-
- <div id="purchase-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
+<!-- 🛒 物品財務請購 Modal -->
+    <div id="purchase-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-[70] print:hidden">
         <div class="bg-white rounded-lg w-[850px] max-w-[95vw] h-[90vh] flex flex-col shadow-2xl">
             <!-- 標題區 (固定) -->
             <div class="p-5 border-b shrink-0 flex justify-between items-center">
@@ -503,20 +503,6 @@
             </div>
         </div>
     </div>
-            <!-- 底部按鈕區 (固定在最下方，不再跟著滾動) -->
-            <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-200 shrink-0">
-                <div class="text-xs text-gray-500 font-bold bg-gray-100 p-2 rounded">💡 系統會自動讀取您在「印領清冊」設定的 GAS 網址與對應版面。</div>
-                <div class="flex gap-3 shrink-0">
-                    <button onclick="closePurchaseModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded font-bold hover:bg-gray-300 transition-colors">取消</button>
-                    <button id="btn-export-purchase" onclick="exportPurchaseToGAS()" class="px-6 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 shadow-sm flex items-center gap-2 transition-all">
-                        📤 匯出請購單至 Google Sheets
-                    </button>
-                </div>
-            </div>
-            
-        </div>
-    </div>
-
     <!-- 匯入資料 Modal -->
     <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 print:hidden">
         <div class="bg-white rounded-lg p-6 w-[600px] shadow-xl">
@@ -1872,7 +1858,7 @@
             document.getElementById('purchase-total-amount').innerText = total;
         }
 
-     function exportPurchaseToGAS() {
+      function exportPurchaseToGAS() {
             const gasUrl = document.getElementById('gas-url').value;
             if (!gasUrl) {
                 showToast("請先填寫右上角 ⚙️ 設定內的 GAS 網址！", "error");
@@ -1896,7 +1882,7 @@
                 return;
             }
 
-            // 【重點修復】：確保 classNote (班別) 與 payerName (代墊人) 確實打包
+            // 這裡將班別與代墊人正確放入 Payload 送給後端
             const payload = {
                 formType: "purchase",
                 year: document.getElementById('purchase-year').value,
@@ -1955,7 +1941,6 @@
                 method: 'POST',
                 body: JSON.stringify(payload)
             })
-
         // --- 教師專屬課表與列印 ---
         function openTeacherScheduleModal() {
             const teacherSet = new Set();
