@@ -1858,7 +1858,7 @@
             document.getElementById('purchase-total-amount').innerText = total;
         }
 
-      function exportPurchaseToGAS() {
+   function exportPurchaseToGAS() {
             const gasUrl = document.getElementById('gas-url').value;
             if (!gasUrl) {
                 showToast("請先填寫右上角 ⚙️ 設定內的 GAS 網址！", "error");
@@ -1882,7 +1882,6 @@
                 return;
             }
 
-            // 這裡將班別與代墊人正確放入 Payload 送給後端
             const payload = {
                 formType: "purchase",
                 year: document.getElementById('purchase-year').value,
@@ -1920,27 +1919,6 @@
                 btn.disabled = false;
             });
         }
-
-            // 【修復】這裡將班別與代墊人正確放入 Payload 送給後端
-            const payload = {
-                formType: "purchase",
-                year: document.getElementById('purchase-year').value,
-                classNote: document.getElementById('purchase-class').value,
-                projectName: document.getElementById('purchase-project-name').value,
-                payerName: document.getElementById('purchase-payer').value,
-                abstract: document.getElementById('purchase-abstract').value,
-                items: items
-            };
-
-            const btn = document.getElementById('btn-export-purchase');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<span class="animate-spin inline-block mr-2">⏳</span>匯出中...';
-            btn.disabled = true;
-
-            fetch(gasUrl, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            })
         // --- 教師專屬課表與列印 ---
         function openTeacherScheduleModal() {
             const teacherSet = new Set();
