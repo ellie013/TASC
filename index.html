@@ -560,7 +560,7 @@
         // ==========================================
         const ADMIN_PASSWORD = "123"; 
 
-          const firebaseConfig = {
+          const firebaseConfig= {
       apiKey: "AIzaSyBg7cePx7eMeU1hATC5AtLskSJayr2jl04",
       authDomain: "tasc-schedule.firebaseapp.com",
       projectId: "tasc-schedule",
@@ -568,7 +568,6 @@
       messagingSenderId: "829044730170",
       appId: "1:829044730170:web:0d5c864d9b90340d200803"
         };
-
         let db = null;
         let isAdmin = false;
 
@@ -1786,18 +1785,9 @@
             const btn = document.getElementById('btn-export-gas');
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
-            fetch(gasUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(res => res.json())
-            .then(data => { 
-                btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; 
-                if (data.status === "success" && data.url) {
-                    showToast("🎉 印領清冊已建立！正在開啟...", "success");
-                    window.open(data.url, '_blank');
-                } else {
-                    showToast("❌ 後端錯誤: " + (data.error || "未知錯誤"), "error");
-                }
-            })
-            .catch(err => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗: " + err.message, "error"); });
+            fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(() => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("🎉 印領清冊已建立！請到 Google 雲端硬碟「My Drive」搜尋「" + teacher + "」", "success"); })
+            .catch(err => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請確認網址是否正確", "error"); });
         }
 
         // ==========================================
@@ -1910,18 +1900,9 @@
             const btn = document.getElementById('btn-export-purchase');
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
-            fetch(gasUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(res => res.json())
-            .then(data => { 
-                btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; 
-                if (data.status === "success" && data.url) {
-                    showToast("🎉 請購單已建立！正在開啟...", "success");
-                    window.open(data.url, '_blank');
-                } else {
-                    showToast("❌ 後端錯誤: " + (data.error || "未知錯誤"), "error");
-                }
-            })
-            .catch(err => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗: " + err.message, "error"); });
+            fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到 Google 雲端硬碟「My Drive」搜尋「" + document.getElementById('purchase-class').value + "」", "success"); })
+            .catch(err => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請檢查網址", "error"); });
         }
 
         // --- 教師專屬課表與列印 ---
