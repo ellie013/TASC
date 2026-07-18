@@ -307,6 +307,47 @@
         let scheduleB = Array.from({length: 10}, () => Array(8).fill(null));
         let teacherMetadata = {};
 
+        // 補回缺少的全域函式
+        window.toggleAdminMode = function() {
+            isAdmin = !isAdmin;
+            const adminBtns = document.querySelectorAll('.admin-btn');
+            adminBtns.forEach(btn => {
+                if (isAdmin) {
+                    btn.classList.remove('hidden');
+                    btn.classList.add('flex'); // 如果原本是 flex，需依情況加回
+                } else {
+                    btn.classList.add('hidden');
+                    btn.classList.remove('flex');
+                }
+            });
+            
+            // 處理純內聯區塊的按鈕 (某些按鈕不是 flex)
+            const inlineBtns = document.querySelectorAll('.admin-btn:not(.flex)');
+            inlineBtns.forEach(btn => {
+                if(isAdmin) {
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.classList.add('hidden');
+                }
+            });
+
+            // 更新身體的唯讀 class
+            if (isAdmin) {
+                document.body.classList.remove('read-only-mode');
+            } else {
+                document.body.classList.add('read-only-mode');
+            }
+            
+            showToast(isAdmin ? "🔓 已切換至管理員模式" : "🔒 已切換至唯讀模式", "info");
+        };
+
+        window.clearHighlightOnBackground = function(event) {
+            // 如果點擊的不是特定元素(例如課表或側邊欄)，則清除所有高亮
+            if (!event.target.closest('section') && !event.target.closest('#sidebar-container') && !event.target.closest('header')) {
+                document.querySelectorAll('.highlighted-instance').forEach(el => el.classList.remove('highlighted-instance'));
+            }
+        };
+
         // --- Firebase Cloud Integration 雲端資料庫模組 ---
         let db, auth, user, app;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-schedule-app';
