@@ -512,6 +512,12 @@
                 </div>
             </div>
             
+            <div id="purchase-result-box" class="hidden mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div class="font-bold text-green-800 mb-1">✅ 請購單已建立</div>
+                <a id="purchase-sheet-link" href="#" target="_blank" rel="noopener noreferrer"
+                   class="text-blue-600 underline font-bold break-all">🔗 開啟剛剛產生的 Google Sheet</a>
+            </div>
+
             <div class="flex justify-between items-center mt-2">
                 <div class="text-xs text-gray-500 font-bold bg-gray-100 p-2 rounded">💡 系統會自動讀取您設定的 GAS 網址與對應版面。</div>
                 <div class="flex gap-3 shrink-0">
@@ -1811,6 +1817,9 @@
         // 🛒 物品財務請購 處理邏輯
         // ==========================================
         function openPurchaseModal() {
+            const resultBox = document.getElementById('purchase-result-box');
+            if (resultBox) resultBox.classList.add('hidden');
+
             if(!isAdmin) {
                 showToast("⚠️ 請先解鎖管理員模式！", "warning");
                 return;
@@ -1881,15 +1890,17 @@
 
         function exportPurchaseToGAS() {
             const gasUrl = document.getElementById('payroll-gas-url')?.value.trim();
-            if (!gasUrl) { showToast("⚠️ 請先在『印領清冊』視窗中填寫 GAS 網址！", "warning"); return; }
-            
+            if (!gasUrl) {
+                showToast("⚠️ 請先在『印領清冊』視窗中填寫 GAS 網址！", "warning");
+                return;
+            }
+
             const items = [];
             document.querySelectorAll('.purchase-item-row').forEach(row => {
                 const name = row.querySelector('.item-name').value.trim();
                 const qty = parseInt(row.querySelector('.item-qty').value) || 0;
                 const price = parseInt(row.querySelector('.item-price').value) || 0;
-                
-                // 略過完全空白且金額為0的行
+
                 if (name || (qty > 0 && price > 0)) {
                     items.push({
                         name: name,
@@ -1901,11 +1912,17 @@
                     });
                 }
             });
-            
-            if (items.length === 0) { showToast("⚠️ 請至少填寫一項明細", "warning"); return; }
+
+            if (items.length === 0) {
+                showToast("⚠️ 請至少填寫一項明細", "warning");
+                return;
+            }
+
+            const requestId = "purchase_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
 
             const payload = {
                 formType: "purchase",
+                requestId: requestId,
                 projectName: document.getElementById('purchase-project-name').value,
                 year: document.getElementById('purchase-year').value,
                 classNote: document.getElementById('purchase-class').value,
@@ -1921,11 +1938,80 @@
             };
 
             const btn = document.getElementById('btn-export-purchase');
-            btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
+            const resultBox = document.getElementById('purchase-result-box');
+            if (resultBox) resultBox.classList.add('hidden');
 
-            fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到雲端硬碟 My Drive 搜尋「" + document.getElementById('purchase-project-name').value + "-" + document.getElementById('purchase-class').value + "」資料夾", "success"); })
-            .catch(err => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請檢查網址", "error"); });
+            btn.innerText = "⏳ 正在建立請購單...";
+            btn.disabled = true;
+
+            // POST 仍使用 no-cors，避免 GitHub Pages 對 GAS 的跨網域限制。
+            // 真正的 Sheet URL 會由 GAS 暫存，再透過 JSONP 讀回。
+            fetch(gasUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                pollPurchaseResult(gasUrl, requestId, 0);
+            })
+            .catch(() => {
+                btn.innerText = "📤 匯出請購單至 Google Sheets";
+                btn.disabled = false;
+                showToast("❌ 連線失敗，請檢查 GAS 網址", "error");
+            });
+        }
+
+        function pollPurchaseResult(gasUrl, requestId, attempt) {
+            const maxAttempts = 15;
+            const btn = document.getElementById('btn-export-purchase');
+
+            if (attempt >= maxAttempts) {
+                btn.innerText = "📤 匯出請購單至 Google Sheets";
+                btn.disabled = false;
+                showToast("⚠️ 請購單可能已建立，但暫時無法取得連結，請稍後再試。", "warning");
+                return;
+            }
+
+            const callbackName = "__purchaseResult_" + Date.now() + "_" + attempt;
+            const script = document.createElement('script');
+
+            window[callbackName] = function(result) {
+                try {
+                    if (result && result.status === "success" && result.url) {
+                        const resultBox = document.getElementById('purchase-result-box');
+                        const link = document.getElementById('purchase-sheet-link');
+
+                        link.href = result.url;
+                        link.textContent = "🔗 開啟剛剛產生的 Google Sheet";
+                        resultBox.classList.remove('hidden');
+
+                        btn.innerText = "📤 匯出請購單至 Google Sheets";
+                        btn.disabled = false;
+                        showToast("🎉 請購單已建立！下方已產生 Google Sheet 連結。", "success");
+                    } else {
+                        setTimeout(() => pollPurchaseResult(gasUrl, requestId, attempt + 1), 1000);
+                    }
+                } finally {
+                    delete window[callbackName];
+                    script.remove();
+                }
+            };
+
+            script.onerror = function() {
+                delete window[callbackName];
+                script.remove();
+                setTimeout(() => pollPurchaseResult(gasUrl, requestId, attempt + 1), 1000);
+            };
+
+            const separator = gasUrl.includes('?') ? '&' : '?';
+            script.src = gasUrl + separator +
+                "action=getPurchaseResult" +
+                "&requestId=" + encodeURIComponent(requestId) +
+                "&prefix=" + encodeURIComponent(callbackName) +
+                "&_=" + Date.now();
+
+            document.body.appendChild(script);
         }
 
         // --- 教師專屬課表與列印 ---
