@@ -1379,6 +1379,13 @@
                 showToast("⚠️ 請先解鎖管理員模式才能使用印領清冊！", "warning");
                 return;
             }
+            // 還原匯出按鈕
+            var exportBtn = document.getElementById('btn-export-gas');
+            if (exportBtn && exportBtn.innerText.includes('已建立')) {
+                exportBtn.innerText = "📤 匯出此人簽呈至 Google Sheets";
+                exportBtn.className = "px-6 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 shadow-sm flex items-center gap-2 transition-all";
+                exportBtn.onclick = exportToGoogleSheets;
+            }
             onPayrollClassChange(); 
             document.getElementById('payroll-modal').classList.remove('hidden');
         }
@@ -1802,8 +1809,20 @@
             const btn = document.getElementById('btn-export-gas');
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
-            fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("🎉 印領清冊已建立！請到雲端硬碟 My Drive 搜尋「" + projectName + "-" + classNote + "」資料夾", "success"); })
+            fetch(gasUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.url) {
+                    btn.innerText = "✅ 已建立！點此開啟印領清冊";
+                    btn.className = "px-6 py-2 bg-emerald-600 text-white rounded font-bold hover:bg-emerald-700 shadow-sm flex items-center gap-2 transition-all";
+                    btn.onclick = function() { window.open(data.url, '_blank'); };
+                    showToast("🎉 印領清冊已建立！點擊按鈕即可開啟試算表", "success");
+                } else {
+                    btn.innerText = "📤 匯出此人簽呈至 Google Sheets";
+                    showToast("🎉 印領清冊已建立！請到雲端硬碟 My Drive 搜尋「" + projectName + "-" + classNote + "」資料夾", "success");
+                }
+            })
             .catch(err => { btn.innerText = "📤 匯出此人簽呈至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請確認網址是否正確", "error"); });
         }
 
@@ -1814,6 +1833,13 @@
             if(!isAdmin) {
                 showToast("⚠️ 請先解鎖管理員模式！", "warning");
                 return;
+            }
+            // 還原匯出按鈕
+            var exportBtn = document.getElementById('btn-export-purchase');
+            if (exportBtn && exportBtn.innerText.includes('已建立')) {
+                exportBtn.innerText = "📤 匯出請購單至 Google Sheets";
+                exportBtn.className = "px-6 py-2 bg-orange-600 text-white rounded font-bold hover:bg-orange-700 shadow-sm flex items-center gap-2 transition-all";
+                exportBtn.onclick = exportPurchaseToGAS;
             }
             document.getElementById('purchase-modal').classList.remove('hidden');
             // 預設帶入印領清冊設定的計畫名稱與年度
@@ -1923,8 +1949,20 @@
             const btn = document.getElementById('btn-export-purchase');
             btn.innerText = "⏳ 正在同步發送中..."; btn.disabled = true;
 
-            fetch(gasUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(() => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("🎉 請購單已建立！請到雲端硬碟 My Drive 搜尋「" + document.getElementById('purchase-project-name').value + "-" + document.getElementById('purchase-class').value + "」資料夾", "success"); })
+            fetch(gasUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.url) {
+                    btn.innerText = "✅ 已建立！點此開啟請購單";
+                    btn.className = "px-6 py-2 bg-emerald-600 text-white rounded font-bold hover:bg-emerald-700 shadow-sm flex items-center gap-2 transition-all";
+                    btn.onclick = function() { window.open(data.url, '_blank'); };
+                    showToast("🎉 請購單已建立！點擊按鈕即可開啟試算表", "success");
+                } else {
+                    btn.innerText = "📤 匯出請購單至 Google Sheets";
+                    showToast("🎉 請購單已建立！請到雲端硬碟 My Drive 搜尋「" + document.getElementById('purchase-project-name').value + "-" + document.getElementById('purchase-class').value + "」資料夾", "success");
+                }
+            })
             .catch(err => { btn.innerText = "📤 匯出請購單至 Google Sheets"; btn.disabled = false; showToast("❌ 連線失敗，請檢查網址", "error"); });
         }
 
